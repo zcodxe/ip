@@ -1,0 +1,904 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>IP Info</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;min-width:0}
+:root{
+  --bg:#eef2f5;--text:#2a2f33;--border:#8fa8b8;--label:#5f7a8a;
+  --surface:#f7f9fb;--sv:#dde5ec;--os:#2a2f33;--osv:#6b7c88;
+  --p:#5c8d89;--op:#fff;--pc:#cfe3e1;--opc:#1f3e3c;
+  --skel-base:#bfcdd6;--skel-shine:#d8e6ec
+}
+body.dark{
+  --bg:#14181b;--text:#d8dee3;--border:#2a3136;--label:#8fa3ad;
+  --surface:#1b2024;--sv:#252c31;--os:#d8dee3;--osv:#9fb0ba;
+  --p:#7fb3ad;--op:#0f1412;--pc:#2e4a48;--opc:#cfe3e1;
+  --skel-base:#2a3540;--skel-shine:#374550
+}
+*{-webkit-tap-highlight-color:transparent}
+body{font-family:Roboto,system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;transition:background .1s,color .1s}
+
+header{height:56px;background:var(--surface);display:flex;justify-content:flex-end;align-items:center;padding:0 16px;border-bottom:1px solid var(--border);gap:10px}
+button{cursor:pointer;border:none;border-radius:20px;font-weight:600;font-family:inherit}
+.btn{background:var(--p);color:var(--op);padding:8px 16px;min-width:80px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;transition:opacity .2s,background .2s}
+.btn:hover{opacity:.85}
+.btn:active{opacity:.7}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+main{max-width:560px;margin:auto;padding:16px}
+
+.info-row{padding:10px 0;border-bottom:1px solid var(--sv)}
+.info-row:last-child{border-bottom:none}
+.info-label{font-size:12px;color:var(--label);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+.info-value{font-family:monospace;word-break:break-all;cursor:pointer;font-size:15px}
+.info-value:hover{color:var(--p)}
+
+/* UTC sub-label */
+.utc-badge{
+  display:inline-block;margin-left:8px;font-size:11px;font-weight:600;
+  background:var(--pc);color:var(--opc);border-radius:4px;padding:1px 6px;
+  vertical-align:middle;letter-spacing:.2px
+}
+
+/* ── Skeleton ── */
+.skel{
+  display:inline-block;border-radius:6px;
+  background:linear-gradient(90deg,var(--skel-base) 25%,var(--skel-shine) 50%,var(--skel-base) 75%);
+  background-size:200% 100%;
+  animation:shimmer 1.2s infinite;
+  height:16px;vertical-align:middle
+}
+@keyframes shimmer{
+  0%{background-position:200% 0}
+  100%{background-position:-200% 0}
+}
+.skel-latlng{width:140px}
+.skel-city  {width:160px}
+.skel-isp   {width:200px}
+.skel-tz    {width:130px}
+.skel-ipv4  {width:110px}
+.skel-ipv6  {width:220px}
+
+.section{margin-top:12px;border-radius:12px;overflow:hidden;border:1px solid var(--border)}
+.section-header{
+  width:100%;padding:14px 16px;
+  background:var(--pc);color:var(--opc);
+  display:flex;justify-content:space-between;align-items:center;
+  font-weight:600;font-size:14px;border:none;border-radius:0;transition:background .2s
+}
+.section-header:hover{filter:brightness(.95)}
+.section-header .arrow{transition:transform .3s;font-size:18px}
+.section-header.open .arrow{transform:rotate(90deg)}
+.section-body{display:none;padding:4px 16px 8px;background:var(--surface)}
+.section-body.show{display:block}
+
+/* ── Map box ── */
+.map-box{display:none;margin-top:12px;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.map-box.show{display:block}
+
+#mapToolbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 10px;background:var(--surface);border-bottom:1px solid var(--border);gap:6px
+}
+#mapLabel{font-size:13px;font-weight:600;color:var(--p);min-height:18px;flex:1;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Map time box */
+#mapTime{
+  font-size:12px;font-weight:700;font-family:monospace;
+  background:var(--pc);color:var(--opc);border:none;
+  border-radius:6px;padding:4px 8px;white-space:nowrap;flex-shrink:0;
+  min-width:84px;text-align:center;letter-spacing:.3px;cursor:pointer;
+  user-select:none;-webkit-user-select:none
+}
+
+/* Zoom [-] [n] [+] */
+#zoomCtrl{display:flex;align-items:center;gap:4px}
+.zstep{
+  width:30px;height:30px;border-radius:6px;border:1px solid var(--border);
+  background:var(--sv);color:var(--os);font-size:16px;font-weight:700;
+  cursor:pointer;font-family:inherit;transition:background .15s,color .15s;
+  display:flex;align-items:center;justify-content:center
+}
+.zstep:hover{background:var(--pc);color:var(--opc)}
+.zstep:disabled{opacity:.35;cursor:not-allowed}
+#zoomNum{
+  min-width:28px;text-align:center;font-size:13px;font-weight:700;
+  color:var(--os);background:var(--pc);color:var(--opc);
+  border-radius:6px;padding:4px 6px;font-family:monospace
+}
+
+/* Full-screen button */
+#fsBtn{
+  width:30px;height:30px;border-radius:6px;border:1px solid var(--border);
+  background:var(--sv);color:var(--os);font-size:14px;font-weight:700;
+  cursor:pointer;font-family:inherit;transition:background .15s;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0
+}
+#fsBtn:hover{background:var(--pc);color:var(--opc)}
+
+#map{height:240px;width:100%;transition:height .2s}
+body:not(.dark) .leaflet-container{background:#eef2f5!important}
+.leaflet-tooltip{background:var(--p);color:#fff;border:none;border-radius:6px;padding:4px 8px;font-size:12px}
+
+/* Full-screen map mode */
+.map-box.fullscreen{
+  position:fixed;top:0;left:0;width:100vw;height:100vh;
+  z-index:2000;border-radius:0;margin:0;border:none
+}
+.map-box.fullscreen #mapToolbar{padding:10px 14px}
+.map-box.fullscreen #map{height:calc(100vh - 49px)!important}
+
+.ig{display:flex;gap:8px;margin-bottom:10px}
+.input-wrap{position:relative;flex:1}
+.input-wrap input{
+  width:100%;padding:10px 36px 10px 12px;
+  border:1px solid var(--border);background:var(--surface);
+  color:var(--os);caret-color:var(--p);border-radius:8px;font-size:14px;
+  font-family:inherit;transition:border-color .2s
+}
+input::placeholder{color:var(--osv)}
+input:focus{outline:none;border-color:var(--p)}
+.clear-btn{
+  position:absolute;right:8px;top:50%;transform:translateY(-50%);
+  width:24px;height:24px;border-radius:50%;background:var(--bg);
+  color:var(--os);font-size:16px;line-height:1;display:flex;
+  align-items:center;justify-content:center;cursor:pointer;
+  opacity:0;pointer-events:none;transition:opacity .2s;border:2px solid var(--p)
+}
+.clear-btn.show{opacity:1;pointer-events:auto}
+
+.cc{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.chip{
+  display:inline-flex;align-items:center;padding:5px 12px;
+  border-radius:20px;font-size:12px;cursor:pointer;
+  border:1px solid var(--border);background:var(--surface);color:var(--os);
+  font-family:monospace;transition:background .2s
+}
+.chip:hover{background:var(--sv)}
+.chip.ipv4{background:var(--pc);color:var(--opc);border-color:transparent}
+.chip.ipv6{background:var(--sv);color:var(--osv);border-color:transparent}
+
+.toast{
+  position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+  background:var(--os);color:var(--surface);padding:8px 18px;
+  border-radius:20px;font-size:13px;opacity:0;pointer-events:none;
+  transition:opacity .3s;z-index:9999;white-space:nowrap
+}
+.toast.show{opacity:.9}
+
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--p);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+#cooldownBar{
+  position:fixed;top:56px;left:0;height:3px;width:0%;
+  background:var(--p);z-index:999;display:none;transition:width .1s linear
+}
+
+@media(max-width:480px){
+  #cooldownBar{top:auto;bottom:56px}
+  header{position:fixed;bottom:0;left:0;width:100%;padding:10px 16px;
+    border-top:1px solid var(--border);border-bottom:none;
+    justify-content:space-between;background:var(--surface);z-index:1000;gap:10px}
+  .btn{flex:1;padding:12px}
+  .ig{flex-direction:column}
+  .ig .btn{width:100%}
+  main{padding-bottom:90px}
+  .toast{bottom:90px}
+}
+</style>
+</head>
+<body>
+
+<div id="cooldownBar"></div>
+
+<header>
+  <button id="reloadBtn" class="btn">Reload</button>
+  <button id="themeBtn" class="btn">Dark</button>
+</header>
+
+<main>
+
+  <div class="section" style="margin-top:0;border-radius:12px">
+    <div style="padding:12px 16px;background:var(--surface)">
+      <div class="info-row">
+        <div class="info-label">Country</div>
+        <div id="country">—</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">Latitude, Longitude</div>
+        <div id="latlng" class="info-value" title="Click to copy"><span class="skel skel-latlng"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <button id="mapBtn" class="btn" style="width:100%;margin-top:12px;border-radius:10px;padding:12px">Show Map</button>
+  <div id="mapBox" class="map-box">
+    <div id="mapToolbar">
+      <span id="mapLabel"></span>
+      <span id="mapTime"></span>
+      <div id="zoomCtrl">
+        <button class="zstep" id="zoomOut">&#8722;</button>
+        <span id="zoomNum">3</span>
+        <button class="zstep" id="zoomIn">&#43;</button>
+      </div>
+      <button id="fsBtn" title="Full screen">&#x26F6;</button>
+    </div>
+    <div id="map"></div>
+  </div>
+
+  <div class="section">
+    <button class="section-header" onclick="toggleSection('loc',this)">
+      Location &amp; ISP <span class="arrow">›</span>
+    </button>
+    <div id="loc" class="section-body">
+      <div class="info-row"><div class="info-label">City &amp; Region</div><div id="city"><span class="skel skel-city"></span></div></div>
+      <div class="info-row"><div class="info-label">ISP / Org</div><div id="isp"><span class="skel skel-isp"></span></div></div>
+      <div class="info-row">
+        <div class="info-label">Timezone</div>
+        <div id="tz"><span class="skel skel-tz"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <button class="section-header" onclick="toggleSection('ipSec',this)">
+      IP Address <span class="arrow">›</span>
+    </button>
+    <div id="ipSec" class="section-body">
+      <div class="info-row"><div class="info-label">IPv4</div><div id="ipv4" class="info-value" title="Click to copy"><span class="skel skel-ipv4"></span></div></div>
+      <div class="info-row"><div class="info-label">IPv6</div><div id="ipv6" class="info-value" title="Click to copy"><span class="skel skel-ipv6"></span></div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <button class="section-header" onclick="toggleSection('custom',this)">
+      Check Custom IP / Domain <span class="arrow">›</span>
+    </button>
+    <div id="custom" class="section-body">
+      <div class="ig" style="margin-top:10px">
+        <div class="input-wrap">
+          <input id="inp" placeholder="Enter IP address or domain" autocomplete="off" spellcheck="false">
+          <button id="clearBtn" class="clear-btn" title="Clear">×</button>
+        </div>
+        <button class="btn" onclick="lookupCustom()">Lookup</button>
+      </div>
+      <div id="rBox" style="display:none">
+        <div class="info-row"><div class="info-label">Resolved IPs</div><div id="rIP" class="cc"></div></div>
+      </div>
+      <div id="cRes" style="display:none">
+        <div class="info-row"><div class="info-label">Country</div><div id="cc">—</div></div>
+        <div class="info-row"><div class="info-label">City / Region</div><div id="cct">—</div></div>
+        <div class="info-row"><div class="info-label">Coordinates</div><div id="cl" class="info-value">—</div></div>
+        <div class="info-row"><div class="info-label">ISP / Org</div><div id="ci">—</div></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div id="toast" class="toast"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+'use strict';
+
+const COOLDOWN_MS = 5000;
+const MIN_ZOOM = 1, MAX_ZOOM = 8;
+
+let currentLat = NaN, currentLon = NaN;
+let mapInstance = null, geoLayer = null, cityMarker = null;
+let cachedGeo = null;
+let toastTimer = null;
+let isLoading = false;
+let cooldownTimer = null;
+let cooldownInterval = null;
+let currentMapZoom = 3;
+let isFullscreen = false;
+
+const $ = id => document.getElementById(id);
+const E = {
+  country:$('country'), latlng:$('latlng'),
+  city:$('city'), isp:$('isp'), tz:$('tz'),
+  ipv4:$('ipv4'), ipv6:$('ipv6'),
+  mapBtn:$('mapBtn'), mapBox:$('mapBox'),
+  inp:$('inp'), clearBtn:$('clearBtn'),
+  rBox:$('rBox'), rIP:$('rIP'),
+  cRes:$('cRes'), cc:$('cc'), cl:$('cl'), cct:$('cct'), ci:$('ci'),
+  toast:$('toast'), themeBtn:$('themeBtn'), reloadBtn:$('reloadBtn'),
+  bar:$('cooldownBar'), mapLabel:$('mapLabel'),
+  zoomNum:$('zoomNum'), zoomIn:$('zoomIn'), zoomOut:$('zoomOut'),
+  fsBtn:$('fsBtn'), mapTime:$('mapTime')
+};
+
+/* ── Skeleton helpers ── */
+const SKEL_CLASSES = {
+  latlng:'skel skel-latlng', city:'skel skel-city',
+  isp:'skel skel-isp',       tz:'skel skel-tz',
+  ipv4:'skel skel-ipv4',     ipv6:'skel skel-ipv6',
+};
+function showSkeletons(){
+  for(const [key,cls] of Object.entries(SKEL_CLASSES))
+    E[key].innerHTML=`<span class="${cls}"></span>`;
+}
+function clearSkel(el, html, isHTML=false){
+  if(isHTML) el.innerHTML=html; else el.textContent=html;
+}
+
+/* ── Toast ── */
+function toast(msg,dur=2200){
+  clearTimeout(toastTimer);
+  E.toast.textContent=msg;
+  E.toast.classList.add('show');
+  toastTimer=setTimeout(()=>E.toast.classList.remove('show'),dur);
+}
+
+/* ── Copy (delegated) ── */
+document.addEventListener('click',e=>{
+  if(!e.target.classList.contains('info-value')) return;
+  const t=e.target.textContent.trim();
+  if(!t||t==='—') return;
+  navigator.clipboard.writeText(t).then(()=>toast('Copied: '+t)).catch(()=>toast('Copy failed'));
+});
+
+/* ── Theme ── */
+let isDark=localStorage.getItem('theme')==='dark';
+function applyTheme(){
+  document.body.classList.toggle('dark',isDark);
+  E.themeBtn.textContent=isDark?'Light':'Dark';
+  if(mapInstance&&cachedGeo) renderMap(cachedGeo);
+}
+applyTheme();
+E.themeBtn.addEventListener('click',()=>{
+  isDark=!isDark;
+  localStorage.setItem('theme',isDark?'dark':'light');
+  applyTheme();
+});
+
+/* ── Section toggle ── */
+function toggleSection(id,btn){
+  const open=$(id).classList.toggle('show');
+  btn.classList.toggle('open',open);
+}
+
+/* ── Fetch with timeout ── */
+async function fetchJSON(url,ms=8000){
+  const ctrl=new AbortController();
+  const t=setTimeout(()=>ctrl.abort(),ms);
+  try{
+    const r=await fetch(url,{signal:ctrl.signal});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.json();
+  }finally{ clearTimeout(t); }
+}
+
+/* ── Reload lock + cooldown bar ── */
+function lockReload(){
+  isLoading=true;
+  E.reloadBtn.disabled=true;
+  E.reloadBtn.textContent='Loading...';
+}
+function startCooldown(){
+  E.bar.style.transition='none';
+  E.bar.style.width='100%';
+  E.bar.style.display='block';
+  void E.bar.offsetWidth;
+  let remaining=COOLDOWN_MS;
+  const tick=200;
+  clearInterval(cooldownInterval);
+  clearTimeout(cooldownTimer);
+  cooldownInterval=setInterval(()=>{
+    remaining-=tick;
+    const pct=Math.max(0,(remaining/COOLDOWN_MS)*100);
+    E.bar.style.transition=`width ${tick}ms linear`;
+    E.bar.style.width=pct+'%';
+    const secs=Math.ceil(remaining/1000);
+    E.reloadBtn.textContent=secs>0?`Wait ${secs}s`:'Wait...';
+  },tick);
+  cooldownTimer=setTimeout(()=>{
+    clearInterval(cooldownInterval);
+    E.bar.style.width='0%';
+    setTimeout(()=>{ E.bar.style.display='none'; },200);
+    isLoading=false;
+    E.reloadBtn.disabled=false;
+    E.reloadBtn.textContent='Reload';
+  },COOLDOWN_MS);
+}
+
+/* ── UTC offset from IANA timezone string ── */
+function getUTCOffset(tzId){
+  if(!tzId) return '';
+  try{
+    const now=new Date();
+    const parts=new Intl.DateTimeFormat('en',{
+      timeZone:tzId,timeZoneName:'shortOffset'
+    }).formatToParts(now);
+    const off=parts.find(p=>p.type==='timeZoneName')?.value||'';
+    return off.replace('GMT','UTC');
+  }catch(e){ return ''; }
+}
+
+/* ── Live clock in timezone ── */
+let liveClockTimer=null;
+let currentTZ='';
+let clockRunning=false;
+
+function getLiveTime(tzId){
+  try{
+    return new Intl.DateTimeFormat('en',{
+      timeZone:tzId,hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true
+    }).format(new Date());
+  }catch(e){ return ''; }
+}
+
+function startLiveClock(){
+  const badge=document.getElementById('utcBadge');
+  if(!badge||!currentTZ) return;
+  clockRunning=true;
+  function tick(){ const t=getLiveTime(currentTZ); if(badge) badge.textContent=t; }
+  tick();
+  liveClockTimer=setInterval(tick,1000);
+  badge.title='Tap to show UTC offset';
+}
+
+function stopLiveClock(){
+  clearInterval(liveClockTimer);
+  liveClockTimer=null;
+  clockRunning=false;
+  const badge=document.getElementById('utcBadge');
+  if(badge&&currentTZ){ badge.textContent=getUTCOffset(currentTZ); badge.title='Tap to show live time'; }
+}
+
+function toggleClock(){
+  if(clockRunning) stopLiveClock(); else startLiveClock();
+}
+
+/* ── Populate ── */
+function populate(d){
+  E.country.textContent=[d.country,d.countryCode?`(${d.countryCode})`:''].filter(Boolean).join(' ')||'—';
+  const lat=parseFloat(d.lat),lon=parseFloat(d.lon);
+  if(!isNaN(lat)){
+    currentLat=lat;currentLon=lon;
+    clearSkel(E.latlng,`${lat.toFixed(4)}, ${lon.toFixed(4)}`);
+  } else clearSkel(E.latlng,'—');
+  clearSkel(E.city,[d.city,d.regionName].filter(Boolean).join(', ')||'—');
+  clearSkel(E.isp,d.isp||'—');
+
+  // Timezone + UTC badge
+  const tz=d.timezone||'';
+  currentTZ=tz;
+  stopLiveClock(); // reset any running clock
+  const utc=getUTCOffset(tz);
+  if(tz){
+    clearSkel(E.tz,
+      `${tz}${utc?` <span class="utc-badge" id="utcBadge" title="Tap to show live time" style="cursor:pointer">${utc}</span>`:''}`,
+      true
+    );
+    const badge=document.getElementById('utcBadge');
+    if(badge) badge.addEventListener('click',toggleClock);
+  } else {
+    clearSkel(E.tz,'—');
+  }
+}
+
+/* ── GEO SOURCES ── */
+async function geoFromIpApi(){
+  const d=await fetchJSON(
+    'http://ip-api.com/json/?fields=status,message,country,countryCode,regionName,city,lat,lon,timezone,isp,org'
+  );
+  if(d.status!=='success') throw new Error(d.message||'ip-api error');
+  return{country:d.country,countryCode:d.countryCode,lat:d.lat,lon:d.lon,
+         city:d.city,regionName:d.regionName,isp:d.isp||d.org,timezone:d.timezone};
+}
+async function geoFromIpWhoIs(){
+  const d=await fetchJSON('https://ipwho.is/');
+  if(!d.success) throw new Error('ipwho.is error');
+  return{country:d.country,countryCode:d.country_code,lat:d.latitude,lon:d.longitude,
+         city:d.city,regionName:d.region,isp:d.connection?.isp||d.connection?.org||'',timezone:d.timezone?.id||''};
+}
+async function geoFromFreeIpApi(){
+  const d=await fetchJSON('https://freeipapi.com/api/json');
+  if(!d.ipAddress) throw new Error('freeipapi error');
+  return{country:d.countryName,countryCode:d.countryCode,lat:d.latitude,lon:d.longitude,
+         city:d.cityName,regionName:d.regionName,isp:'',timezone:d.timeZone||''};
+}
+
+/* ── Load my IP ── */
+async function loadMyIP(){
+  if(isLoading){toast('Please wait...');return;}
+  lockReload();
+  E.country.innerHTML='<span class="spinner"></span>Loading...';
+  showSkeletons();
+
+  const [v4,v6]=await Promise.allSettled([
+    fetchJSON('https://api.ipify.org?format=json'),
+    fetchJSON('https://api64.ipify.org?format=json')
+  ]);
+  if(v4.status==='fulfilled'&&v4.value?.ip) clearSkel(E.ipv4,v4.value.ip);
+  else clearSkel(E.ipv4,'Unavailable');
+  if(v6.status==='fulfilled'&&v6.value?.ip){
+    const ip=v6.value.ip;
+    if(ip.includes(':')) clearSkel(E.ipv6,ip);
+    else{ clearSkel(E.ipv6,'Unavailable'); if(E.ipv4.textContent==='—') clearSkel(E.ipv4,ip); }
+  } else clearSkel(E.ipv6,'Unavailable');
+
+  let geo=null;
+  for(const src of [geoFromIpApi,geoFromIpWhoIs,geoFromFreeIpApi]){
+    try{ geo=await src(); break; }
+    catch(e){ console.warn(src.name,e.message); }
+  }
+  if(geo) populate(geo);
+  else{
+    E.country.textContent='Location unavailable';
+    ['latlng','city','isp','tz'].forEach(k=>clearSkel(E[k],'—'));
+    toast('All geo sources failed — check your connection');
+  }
+  startCooldown();
+}
+
+/* ── Custom IP / Domain lookup ── */
+async function lookupCustom(){
+  const raw=E.inp.value.trim();
+  if(!raw){toast('Enter an IP or domain');return;}
+  E.rBox.style.display='none';E.cRes.style.display='none';E.rIP.innerHTML='';
+  const ipv4Re=/^(\d{1,3}\.){3}\d{1,3}$/;
+  const ipv6Re=/^[0-9a-fA-F:]+$/;
+  const isDomain=!ipv4Re.test(raw)&&!ipv6Re.test(raw);
+  let ipToQuery=raw;
+  if(isDomain){
+    try{
+      const [r4,r6]=await Promise.all([
+        fetchJSON(`https://dns.google/resolve?name=${encodeURIComponent(raw)}&type=A`),
+        fetchJSON(`https://dns.google/resolve?name=${encodeURIComponent(raw)}&type=AAAA`)
+      ]);
+      const v4s=(r4.Answer||[]).filter(x=>x.type===1).map(x=>x.data);
+      const v6s=(r6.Answer||[]).filter(x=>x.type===28).map(x=>x.data);
+      const all=[...new Set([...v4s,...v6s])];
+      if(!all.length){toast('Could not resolve domain');return;}
+      E.rBox.style.display='block';
+      all.forEach(ip=>{
+        const chip=document.createElement('span');
+        chip.className='chip '+(ipv4Re.test(ip)?'ipv4':'ipv6');
+        chip.textContent=ip;chip.title='Click to lookup';
+        chip.addEventListener('click',()=>{E.inp.value=ip;E.clearBtn.classList.add('show');lookupCustom();});
+        E.rIP.appendChild(chip);
+      });
+      ipToQuery=v4s[0]||v6s[0];
+    }catch(e){toast('DNS resolution failed');console.error(e);return;}
+  }
+  try{
+    const d=await fetchJSON(
+      `http://ip-api.com/json/${encodeURIComponent(ipToQuery)}?fields=status,message,country,countryCode,regionName,city,lat,lon,isp,org`
+    );
+    if(d.status!=='success'){toast(d.message||'Lookup failed');return;}
+    E.cRes.style.display='block';
+    E.cc.textContent=[d.country,d.countryCode?`(${d.countryCode})`:''].filter(Boolean).join(' ')||'—';
+    E.cct.textContent=[d.city,d.regionName].filter(Boolean).join(', ')||'—';
+    E.cl.textContent=(d.lat&&d.lon)?`${parseFloat(d.lat).toFixed(4)}, ${parseFloat(d.lon).toFixed(4)}`:'—';
+    E.ci.textContent=d.isp||d.org||'—';
+  }catch(e){toast('Geo lookup failed');console.error(e);}
+}
+
+/* ── Input clear ── */
+E.inp.addEventListener('input',()=>E.clearBtn.classList.toggle('show',E.inp.value.length>0));
+E.inp.addEventListener('keydown',e=>{if(e.key==='Enter') lookupCustom();});
+E.clearBtn.addEventListener('click',()=>{
+  E.inp.value='';E.clearBtn.classList.remove('show');
+  E.rBox.style.display='none';E.cRes.style.display='none';E.rIP.innerHTML='';
+  E.inp.focus();
+});
+
+/* ══════════════════════════════
+   MAP CLOCK
+   ══════════════════════════════ */
+
+// Representative IANA timezone per country name (as returned by world-atlas)
+// Covers all 195 countries — falls back to UTC if missing
+const COUNTRY_TZ = {
+  'Afghanistan':'Asia/Kabul','Albania':'Europe/Tirane','Algeria':'Africa/Algiers',
+  'Angola':'Africa/Luanda','Argentina':'America/Argentina/Buenos_Aires',
+  'Armenia':'Asia/Yerevan','Australia':'Australia/Sydney','Austria':'Europe/Vienna',
+  'Azerbaijan':'Asia/Baku','Bahrain':'Asia/Bahrain','Bangladesh':'Asia/Dhaka',
+  'Belarus':'Europe/Minsk','Belgium':'Europe/Brussels','Belize':'America/Belize',
+  'Benin':'Africa/Porto-Novo','Bhutan':'Asia/Thimphu','Bolivia':'America/La_Paz',
+  'Bosnia and Herz.':'Europe/Sarajevo','Botswana':'Africa/Gaborone',
+  'Brazil':'America/Sao_Paulo','Brunei':'Asia/Brunei','Bulgaria':'Europe/Sofia',
+  'Burkina Faso':'Africa/Ouagadougou','Burundi':'Africa/Bujumbura',
+  'Cambodia':'Asia/Phnom_Penh','Cameroon':'Africa/Douala','Canada':'America/Toronto',
+  'Central African Rep.':'Africa/Bangui','Chad':'Africa/Ndjamena','Chile':'America/Santiago',
+  'China':'Asia/Shanghai','Colombia':'America/Bogota','Congo':'Africa/Brazzaville',
+  'Dem. Rep. Congo':'Africa/Kinshasa','Costa Rica':'America/Costa_Rica',
+  'Croatia':'Europe/Zagreb','Cuba':'America/Havana','Cyprus':'Asia/Nicosia',
+  'Czech Rep.':'Europe/Prague','Denmark':'Europe/Copenhagen','Djibouti':'Africa/Djibouti',
+  'Dominican Rep.':'America/Santo_Domingo','Ecuador':'America/Guayaquil',
+  'Egypt':'Africa/Cairo','El Salvador':'America/El_Salvador',
+  'Equatorial Guinea':'Africa/Malabo','Eritrea':'Africa/Asmara','Estonia':'Europe/Tallinn',
+  'Ethiopia':'Africa/Addis_Ababa','Fiji':'Pacific/Fiji','Finland':'Europe/Helsinki',
+  'France':'Europe/Paris','Gabon':'Africa/Libreville','Gambia':'Africa/Banjul',
+  'Georgia':'Asia/Tbilisi','Germany':'Europe/Berlin','Ghana':'Africa/Accra',
+  'Greece':'Europe/Athens','Guatemala':'America/Guatemala','Guinea':'Africa/Conakry',
+  'Guinea-Bissau':'Africa/Bissau','Guyana':'America/Guyana','Haiti':'America/Port-au-Prince',
+  'Honduras':'America/Tegucigalpa','Hungary':'Europe/Budapest','Iceland':'Atlantic/Reykjavik',
+  'India':'Asia/Kolkata','Indonesia':'Asia/Jakarta','Iran':'Asia/Tehran','Iraq':'Asia/Baghdad',
+  'Ireland':'Europe/Dublin','Israel':'Asia/Jerusalem','Italy':'Europe/Rome',
+  'Ivory Coast':'Africa/Abidjan','Jamaica':'America/Jamaica','Japan':'Asia/Tokyo',
+  'Jordan':'Asia/Amman','Kazakhstan':'Asia/Almaty','Kenya':'Africa/Nairobi',
+  'Kosovo':'Europe/Belgrade','Kuwait':'Asia/Kuwait','Kyrgyzstan':'Asia/Bishkek',
+  'Laos':'Asia/Vientiane','Latvia':'Europe/Riga','Lebanon':'Asia/Beirut',
+  'Lesotho':'Africa/Maseru','Liberia':'Africa/Monrovia','Libya':'Africa/Tripoli',
+  'Lithuania':'Europe/Vilnius','Luxembourg':'Europe/Luxembourg',
+  'Macedonia':'Europe/Skopje','Madagascar':'Indian/Antananarivo','Malawi':'Africa/Blantyre',
+  'Malaysia':'Asia/Kuala_Lumpur','Mali':'Africa/Bamako','Malta':'Europe/Malta',
+  'Mauritania':'Africa/Nouakchott','Mauritius':'Indian/Mauritius','Mexico':'America/Mexico_City',
+  'Moldova':'Europe/Chisinau','Mongolia':'Asia/Ulaanbaatar','Montenegro':'Europe/Podgorica',
+  'Morocco':'Africa/Casablanca','Mozambique':'Africa/Maputo','Myanmar':'Asia/Rangoon',
+  'Namibia':'Africa/Windhoek','Nepal':'Asia/Kathmandu','Netherlands':'Europe/Amsterdam',
+  'New Zealand':'Pacific/Auckland','Nicaragua':'America/Managua','Niger':'Africa/Niamey',
+  'Nigeria':'Africa/Lagos','North Korea':'Asia/Pyongyang','Norway':'Europe/Oslo',
+  'Oman':'Asia/Muscat','Pakistan':'Asia/Karachi','Palestine':'Asia/Gaza',
+  'Panama':'America/Panama','Papua New Guinea':'Pacific/Port_Moresby','Paraguay':'America/Asuncion',
+  'Peru':'America/Lima','Philippines':'Asia/Manila','Poland':'Europe/Warsaw',
+  'Portugal':'Europe/Lisbon','Puerto Rico':'America/Puerto_Rico','Qatar':'Asia/Qatar',
+  'Romania':'Europe/Bucharest','Russia':'Europe/Moscow','Rwanda':'Africa/Kigali',
+  'Saudi Arabia':'Asia/Riyadh','Senegal':'Africa/Dakar','Serbia':'Europe/Belgrade',
+  'Sierra Leone':'Africa/Freetown','Slovakia':'Europe/Bratislava','Slovenia':'Europe/Ljubljana',
+  'Somalia':'Africa/Mogadishu','South Africa':'Africa/Johannesburg',
+  'South Korea':'Asia/Seoul','South Sudan':'Africa/Juba','Spain':'Europe/Madrid',
+  'Sri Lanka':'Asia/Colombo','Sudan':'Africa/Khartoum','Suriname':'America/Paramaribo',
+  'Swaziland':'Africa/Mbabane','Sweden':'Europe/Stockholm','Switzerland':'Europe/Zurich',
+  'Syria':'Asia/Damascus','Taiwan':'Asia/Taipei','Tajikistan':'Asia/Dushanbe',
+  'Tanzania':'Africa/Dar_es_Salaam','Thailand':'Asia/Bangkok','Timor-Leste':'Asia/Dili',
+  'Togo':'Africa/Lome','Trinidad and Tobago':'America/Port_of_Spain','Tunisia':'Africa/Tunis',
+  'Turkey':'Europe/Istanbul','Turkmenistan':'Asia/Ashgabat','Uganda':'Africa/Kampala',
+  'Ukraine':'Europe/Kiev','United Arab Emirates':'Asia/Dubai',
+  'United Kingdom':'Europe/London','United States of America':'America/New_York',
+  'Uruguay':'America/Montevideo','Uzbekistan':'Asia/Tashkent','Venezuela':'America/Caracas',
+  'Vietnam':'Asia/Ho_Chi_Minh','Yemen':'Asia/Aden','Zambia':'Africa/Lusaka',
+  'Zimbabwe':'Africa/Harare'
+};
+
+let mapClockTimer=null;
+let mapClockTZ=''; // TZ currently shown in map toolbar
+let mapTimeMode='live'; // 'live' | 'utc'
+
+function getMapTime(tzId){
+  try{
+    return new Intl.DateTimeFormat('en',{
+      timeZone:tzId,hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true
+    }).format(new Date());
+  }catch(e){ return ''; }
+}
+
+function getMapUTC(tzId){
+  if(!tzId) return '';
+  try{
+    const parts=new Intl.DateTimeFormat('en',{
+      timeZone:tzId,timeZoneName:'shortOffset'
+    }).formatToParts(new Date());
+    return (parts.find(p=>p.type==='timeZoneName')?.value||'').replace('GMT','UTC');
+  }catch(e){ return ''; }
+}
+
+function renderMapTime(){
+  if(!mapClockTZ){ E.mapTime.textContent=''; return; }
+  E.mapTime.textContent = mapTimeMode==='live'
+    ? getMapTime(mapClockTZ)
+    : getMapUTC(mapClockTZ);
+}
+
+function setMapClock(tzId){
+  clearInterval(mapClockTimer);
+  if(!tzId){ E.mapTime.textContent=''; return; }
+  mapClockTZ=tzId;
+  renderMapTime();
+  // Only tick every second in live mode; UTC is static but we still interval to catch DST edge
+  mapClockTimer=setInterval(renderMapTime, 1000);
+}
+
+// Tap to toggle live ↔ UTC
+E.mapTime.addEventListener('click',()=>{
+  mapTimeMode = mapTimeMode==='live' ? 'utc' : 'live';
+  renderMapTime();
+});
+
+/* ══════════════════════════════
+   MAP
+   ══════════════════════════════ */
+async function loadTopoJSON(){
+  if(window.topojson) return;
+  await new Promise((res,rej)=>{
+    const s=document.createElement('script');
+    s.src='https://unpkg.com/topojson-client@3/dist/topojson-client.min.js';
+    s.onload=res;s.onerror=rej;document.body.appendChild(s);
+  });
+}
+async function loadWorldGeo(){
+  if(cachedGeo) return cachedGeo;
+  const d=await fetchJSON('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json');
+  cachedGeo=topojson.feature(d,d.objects.countries);
+  return cachedGeo;
+}
+
+/* Update zoom display + button states */
+function updateZoomUI(z){
+  currentMapZoom=z;
+  E.zoomNum.textContent=z;
+  E.zoomOut.disabled=(z<=MIN_ZOOM);
+  E.zoomIn.disabled=(z>=MAX_ZOOM);
+}
+
+/* Zoom buttons always re-center on the location dot */
+function applyZoom(z){
+  z=Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,z));
+  updateZoomUI(z);
+  if(mapInstance){
+    if(!isNaN(currentLat)){
+      mapInstance.setView([currentLat,currentLon],z,{animate:true});
+    } else {
+      mapInstance.setZoom(z,{animate:true});
+    }
+  }
+}
+
+E.zoomIn.addEventListener('click', ()=>applyZoom(currentMapZoom+1));
+E.zoomOut.addEventListener('click',()=>applyZoom(currentMapZoom-1));
+
+/* Full-screen toggle */
+function toggleFullscreen(){
+  isFullscreen=!isFullscreen;
+  E.mapBox.classList.toggle('fullscreen',isFullscreen);
+  E.fsBtn.innerHTML=isFullscreen?'&#x2715;':'&#x26F6;';
+  E.fsBtn.title=isFullscreen?'Exit full screen':'Full screen';
+
+  if(mapInstance){
+    if(isFullscreen){
+      mapInstance.dragging.enable();
+      mapInstance.scrollWheelZoom.enable();
+      mapInstance.touchZoom.enable();
+      mapInstance.doubleClickZoom.enable();
+    } else {
+      // back to normal: lock all movement
+      mapInstance.dragging.disable();
+      mapInstance.scrollWheelZoom.disable();
+      mapInstance.touchZoom.disable();
+      mapInstance.doubleClickZoom.disable();
+    }
+    setTimeout(()=>{
+      mapInstance.invalidateSize();
+      // Re-center on country bounds center at current zoom (not dot)
+      if(cachedGeo&&!isFullscreen){
+        const uc=E.country.textContent.replace(/\s*\(.*\)/,'').trim().toLowerCase();
+        let found=false;
+        for(const f of cachedGeo.features){
+          if((f.properties.name||'').toLowerCase()===uc){
+            const layer=L.geoJSON(f);
+            const c=layer.getBounds().getCenter();
+            mapInstance.setView(c,currentMapZoom,{animate:false});
+            found=true;
+            break;
+          }
+        }
+        if(!found&&!isNaN(currentLat))
+          mapInstance.setView([currentLat,currentLon],currentMapZoom,{animate:false});
+      }
+    },80);
+  }
+}
+E.fsBtn.addEventListener('click',toggleFullscreen);
+
+// Escape key exits fullscreen
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&isFullscreen) toggleFullscreen();
+});
+
+function renderMap(geo){
+  if(!mapInstance) return;
+  if(geoLayer){geoLayer.remove();geoLayer=null;}
+  if(cityMarker){cityMarker.remove();cityMarker=null;}
+  const primary=getComputedStyle(document.body).getPropertyValue('--p').trim();
+  const uc=E.country.textContent.replace(/\s*\(.*\)/,'').trim().toLowerCase();
+  let centered=false;
+
+  geoLayer=L.geoJSON(geo,{
+    style:f=>{
+      const m=(f.properties.name||'').toLowerCase()===uc;
+      return{
+        color:  m?(isDark?'#2e7d32':primary):(isDark?'#444':'#8fa8b8'),
+        weight: m?2:1.2,
+        fillColor: m?primary:(isDark?'#222':'#1a1f23'),
+        fillOpacity: m?0.45:(isDark?0.2:0.18)
+      };
+    },
+    onEachFeature:(f,layer)=>{
+      const name=f.properties.name||'Unknown';
+      const m=name.toLowerCase()===uc;
+
+      // Initial view: center on country geographic bounds center (not dot)
+      if(m&&!centered){
+        centered=true;
+        const countryCenter=layer.getBounds().getCenter();
+        mapInstance.setView(countryCenter,currentMapZoom);
+        E.mapLabel.textContent=name;
+        // Default clock = user's own timezone
+        setMapClock(currentTZ);
+      }
+
+      // Hover: always show for all countries
+      layer.on('mouseover',e=>{ e.target.setStyle({weight:2.4,color:'#4a6070'}); });
+      layer.on('mouseout', e=>{ geoLayer.resetStyle(e.target); });
+
+      // Click/tap:
+      // - User's country → show name in toolbar + center on country bounds center
+      // - Other countries → show name only, NO map movement
+      layer.on('click',()=>{
+        E.mapLabel.textContent=name;
+        // Update clock to clicked country's timezone
+        const tz=COUNTRY_TZ[name]||currentTZ;
+        setMapClock(tz);
+        if(m){
+          const countryCenter=layer.getBounds().getCenter();
+          mapInstance.setView(countryCenter,currentMapZoom,{animate:true});
+        }
+        // other countries: name shown, map stays put
+      });
+    }
+  }).addTo(mapInstance);
+
+  if(!isNaN(currentLat)){
+    cityMarker=L.circleMarker([currentLat,currentLon],{
+      radius:7,color:isDark?'#16a34a':'#15803d',weight:2.5,
+      fillColor:isDark?'#4ade80':'#22c55e',fillOpacity:1
+    }).addTo(mapInstance);
+    cityMarker.bindTooltip(E.city.textContent||'Your location',{direction:'top'});
+  }
+}
+
+async function showMap(){
+  if(isNaN(currentLat)){toast('Location unavailable');return;}
+  const vis=E.mapBox.classList.toggle('show');
+  E.mapBtn.textContent=vis?'Hide Map':'Show Map';
+  if(!vis) return;
+  try{
+    await loadTopoJSON();
+    setTimeout(async()=>{
+      if(!mapInstance){
+        mapInstance=L.map('map',{
+          renderer:L.canvas(),zoomControl:false,attributionControl:false,
+          dragging:false,          // locked in normal mode
+          scrollWheelZoom:false,
+          doubleClickZoom:false,
+          boxZoom:false,keyboard:false,touchZoom:false
+        }).setView([currentLat,currentLon],currentMapZoom);
+
+        mapInstance.on('zoomend',()=>{ updateZoomUI(mapInstance.getZoom()); });
+      }
+      renderMap(await loadWorldGeo());
+      mapInstance.invalidateSize();
+      updateZoomUI(currentMapZoom);
+    },120);
+  }catch(e){toast('Map failed to load');console.error(e);}
+}
+E.mapBtn.addEventListener('click',showMap);
+
+/* ── Reload ── */
+E.reloadBtn.addEventListener('click',()=>{
+  if(isLoading){toast('Please wait...');return;}
+  currentLat=NaN;currentLon=NaN;
+  clearInterval(mapClockTimer); mapClockTimer=null; E.mapTime.textContent='';
+  if(mapInstance){mapInstance.remove();mapInstance=null;}
+  geoLayer=null;cityMarker=null;
+  if(isFullscreen){toggleFullscreen();}
+  if(E.mapBox.classList.contains('show')){E.mapBox.classList.remove('show');E.mapBtn.textContent='Show Map';}
+  loadMyIP();
+});
+
+/* ── Init ── */
+updateZoomUI(currentMapZoom);
+loadMyIP();
+</script>
+</body>
+</html>
