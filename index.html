@@ -59,26 +59,27 @@ main{max-width:560px;margin:auto;padding:16px}
 .section-body.show{display:block}
 
 /* ── Map box ── */
-.map-box{display:none;margin-top:12px;border:1px solid var(--border);border-radius:12px;overflow:hidden}
-.map-box.show{display:block}
-#mapToolbar{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--surface);border-bottom:1px solid var(--border);gap:6px}
-#mapLabel{font-size:15px;font-weight:700;color:var(--opc);min-height:22px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--pc);border-radius:6px;padding:4px 8px}
-#mapTime{font-size:12px;font-weight:700;font-family:monospace;background:var(--pc);color:var(--opc);border:none;border-radius:6px;padding:4px 8px;white-space:nowrap;flex-shrink:0;min-width:84px;text-align:center;letter-spacing:.3px;cursor:pointer;user-select:none;-webkit-user-select:none}
+.map-box{display:none;margin-top:12px;border:1px solid var(--border);border-radius:12px;overflow:hidden;display:none;flex-direction:column}
+.map-box.show{display:flex}
+#map{height:240px;width:100%;order:1;transition:height .2s}
+#mapToolbar{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--surface);border-top:1px solid var(--border);gap:6px;order:2}
+#mapLabel{font-size:15px;font-weight:700;color:var(--opc);min-height:22px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--pc);border-radius:6px;padding:4px 8px;border:none;cursor:pointer;font-family:inherit;text-align:left;transition:filter .15s}
+#mapLabel:hover{filter:brightness(.92)}
+#mapTime{font-size:15px;font-weight:700;font-family:monospace;background:var(--pc);color:var(--opc);border:none;border-radius:6px;padding:4px 8px;white-space:nowrap;flex-shrink:0;min-width:84px;text-align:center;letter-spacing:.3px;cursor:pointer;user-select:none;-webkit-user-select:none}
 #zoomCtrl{display:flex;align-items:center;gap:4px}
 .zstep{width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--sv);color:var(--os);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:background .15s,color .15s;display:flex;align-items:center;justify-content:center}
 .zstep:hover{background:var(--pc);color:var(--opc)}
 .zstep:disabled{opacity:.35;cursor:not-allowed}
-#zoomNum{min-width:28px;text-align:center;font-size:13px;font-weight:700;background:var(--pc);color:var(--opc);border-radius:6px;padding:4px 6px;font-family:monospace}
-#fsBtn{width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--sv);color:var(--os);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:background .15s;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#zoomNum{min-width:28px;text-align:center;font-size:15px;font-weight:700;background:var(--pc);color:var(--opc);border-radius:6px;padding:4px 8px;font-family:monospace}
+#fsBtn{width:32px;height:32px;border-radius:6px;border:1px solid var(--border);background:var(--sv);color:var(--os);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:background .15s;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 #fsBtn:hover{background:var(--pc);color:var(--opc)}
-#map{height:240px;width:100%;transition:height .2s}
 body:not(.dark) .leaflet-container{background:var(--bg)!important}
 .leaflet-tooltip{background:var(--pc);color:var(--opc);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;font-weight:600;box-shadow:none}
 .leaflet-tooltip-top::before{border-top-color:var(--border)}
 .map-city-tip{background:var(--p)!important;color:var(--op)!important;border-color:var(--p)!important;font-weight:700}
-.map-box.fullscreen{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:2000;border-radius:0;margin:0;border:none}
-.map-box.fullscreen #mapToolbar{padding:10px 14px}
-.map-box.fullscreen #map{height:calc(100vh - 49px)!important}
+.map-box.fullscreen{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:2000;border-radius:0;margin:0;border:none;display:flex;flex-direction:column}
+.map-box.fullscreen #map{height:calc(100vh - 53px)!important;order:1}
+.map-box.fullscreen #mapToolbar{order:2;padding:10px 14px}
 
 .ig{display:flex;gap:8px;margin-bottom:10px}
 .input-wrap{position:relative;flex:1}
@@ -114,8 +115,9 @@ input:focus{outline:none;border-color:var(--p)}
 .theme-swatch{width:20px;height:20px;border-radius:5px;border:1px solid rgba(0,0,0,.08)}
 .theme-name{font-size:11px;font-weight:600;color:var(--os);text-align:center;line-height:1.3;letter-spacing:.1px}
 
-.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--os);color:var(--surface);padding:8px 18px;border-radius:20px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .3s;z-index:9999;white-space:nowrap}
-.toast.show{opacity:.9}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--os);color:var(--surface);padding:10px 20px;border-radius:22px;font-size:15px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .3s;z-index:9999;white-space:nowrap;display:flex;align-items:center;gap:8px}
+.toast.show{opacity:.95}
+.toast-icon{font-size:17px;flex-shrink:0}
 .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--p);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
 @keyframes spin{to{transform:rotate(360deg)}}
 
@@ -128,7 +130,7 @@ input:focus{outline:none;border-color:var(--p)}
   .ig{flex-direction:column}
   .ig .btn{width:100%}
   main{padding-bottom:90px}
-  .toast{bottom:90px}
+  .toast{bottom:94px}
 }
 </style>
 </head>
@@ -158,8 +160,9 @@ input:focus{outline:none;border-color:var(--p)}
 
   <button id="mapBtn" class="btn" style="width:100%;margin-top:12px;border-radius:10px;padding:12px">Show Map</button>
   <div id="mapBox" class="map-box">
+    <div id="map"></div>
     <div id="mapToolbar">
-      <span id="mapLabel"></span>
+      <button id="mapLabel" title="Reset to default view"></button>
       <span id="mapTime"></span>
       <div id="zoomCtrl">
         <button class="zstep" id="zoomOut">&#8722;</button>
@@ -168,7 +171,6 @@ input:focus{outline:none;border-color:var(--p)}
       </div>
       <button id="fsBtn" title="Full screen">&#x26F6;</button>
     </div>
-    <div id="map"></div>
   </div>
 
   <div class="section">
@@ -231,7 +233,7 @@ input:focus{outline:none;border-color:var(--p)}
 
 </main>
 
-<div id="toast" class="toast"></div>
+<div id="toast" class="toast"><span id="toastIcon" class="toast-icon"></span><span id="toastMsg"></span></div>
 
 <!-- Theme config — edit this file to add themes -->
 <script src="themes.js"></script>
@@ -283,9 +285,18 @@ async function applyColorTheme(id, save=true){
     c.classList.toggle('active', c.dataset.id===theme.id);
   });
 
-  // Re-render map colors if open (map uses CSS vars)
-  if(typeof mapInstance!=='undefined'&&mapInstance&&typeof cachedGeo!=='undefined'&&cachedGeo){
-    setTimeout(()=>renderMap(cachedGeo), 80);
+  // Re-style map layer colors without re-centering (just update styles, not re-render)
+  if(typeof geoLayer!=='undefined'&&geoLayer&&typeof mapInstance!=='undefined'&&mapInstance){
+    const primary=getComputedStyle(document.body).getPropertyValue('--p').trim();
+    const pcColor=getComputedStyle(document.body).getPropertyValue('--pc').trim();
+    const uc=E.country.textContent.replace(/\s*\(.*\)/,'').trim().toLowerCase();
+    setTimeout(()=>{
+      geoLayer.setStyle(f=>{
+        const m=(f.properties.name||'').toLowerCase()===uc;
+        return{color:m?(isDark?pcColor:primary):(isDark?'#444':'#8fa8b8'),weight:m?2:1.2,
+               fillColor:m?primary:(isDark?'#222':'#1a1f23'),fillOpacity:m?0.45:(isDark?0.2:0.18)};
+      });
+    },90);
   }
 
   if(save) localStorage.setItem(THEME_STORE_KEY, theme.id);
@@ -357,7 +368,8 @@ const E = {
   toast:$('toast'), themeBtn:$('themeBtn'), reloadBtn:$('reloadBtn'),
   bar:$('cooldownBar'), mapLabel:$('mapLabel'),
   zoomNum:$('zoomNum'), zoomIn:$('zoomIn'), zoomOut:$('zoomOut'),
-  fsBtn:$('fsBtn'), mapTime:$('mapTime')
+  fsBtn:$('fsBtn'), mapTime:$('mapTime'),
+  toastIcon:$('toastIcon'), toastMsg:$('toastMsg')
 };
 
 /* ── Skeleton helpers ── */
@@ -375,9 +387,12 @@ function clearSkel(el,html,isHTML=false){
 }
 
 /* ── Toast ── */
-function toast(msg,dur=2200){
+// ok=true → ✓ green circle, ok=false → ✗ red circle, ok=null → no icon
+function toast(msg, ok=null, dur=2400){
   clearTimeout(toastTimer);
-  E.toast.textContent=msg;
+  E.toastMsg.textContent=msg;
+  E.toastIcon.textContent = ok===true ? '✓' : ok===false ? '✕' : '';
+  E.toastIcon.style.color = ok===true ? '#4ade80' : ok===false ? '#f87171' : '';
   E.toast.classList.add('show');
   toastTimer=setTimeout(()=>E.toast.classList.remove('show'),dur);
 }
@@ -387,7 +402,7 @@ document.addEventListener('click',e=>{
   if(!e.target.classList.contains('info-value')) return;
   const t=e.target.textContent.trim();
   if(!t||t==='—') return;
-  navigator.clipboard.writeText(t).then(()=>toast('Copied: '+t)).catch(()=>toast('Copy failed'));
+  navigator.clipboard.writeText(t).then(()=>toast('Copied:, true)).catch(()=>toast('Copy failed', false));
 });
 
 /* ── Dark / Light mode toggle ── */
@@ -543,7 +558,7 @@ async function geoFromIpApiCo(){
 
 /* ── Load my IP ── */
 async function loadMyIP(){
-  if(isLoading){toast('Please wait...');return;}
+  if(isLoading){toast('Please wait...', null);return;}
   lockReload();
   E.country.innerHTML='<span class="spinner"></span>Loading...';
   showSkeletons();
@@ -569,7 +584,7 @@ async function loadMyIP(){
   else{
     E.country.textContent='Location unavailable';
     ['latlng','city','isp','tz'].forEach(k=>clearSkel(E[k],'—'));
-    toast('All geo sources failed — check your connection');
+    toast('All geo sources failed — check your connection', false);
   }
   startCooldown();
 }
@@ -577,7 +592,7 @@ async function loadMyIP(){
 /* ── Custom IP / Domain lookup ── */
 async function lookupCustom(){
   const raw=E.inp.value.trim();
-  if(!raw){toast('Enter an IP or domain');return;}
+  if(!raw){toast('Enter an IP or domain', null);return;}
   E.rBox.style.display='none';E.cRes.style.display='none';E.rIP.innerHTML='';
   const ipv4Re=/^(\d{1,3}\.){3}\d{1,3}$/;
   const ipv6Re=/^[0-9a-fA-F:]+$/;
@@ -592,7 +607,7 @@ async function lookupCustom(){
       const v4s=(r4.Answer||[]).filter(x=>x.type===1).map(x=>x.data);
       const v6s=(r6.Answer||[]).filter(x=>x.type===28).map(x=>x.data);
       const all=[...new Set([...v4s,...v6s])];
-      if(!all.length){toast('Could not resolve domain');return;}
+      if(!all.length){toast('Could not resolve domain', false);return;}
       E.rBox.style.display='block';
       all.forEach(ip=>{
         const chip=document.createElement('span');
@@ -602,7 +617,7 @@ async function lookupCustom(){
         E.rIP.appendChild(chip);
       });
       ipToQuery=v4s[0]||v6s[0];
-    }catch(e){toast('DNS resolution failed');console.error(e);return;}
+    }catch(e){toast('DNS resolution failed', false);console.error(e);return;}
   }
   try{
     // Try ipwho.is first, fallback to ipapi.co/{ip}
@@ -623,7 +638,7 @@ async function lookupCustom(){
       E.cl.textContent=(d.latitude&&d.longitude)?`${parseFloat(d.latitude).toFixed(4)}, ${parseFloat(d.longitude).toFixed(4)}`:'—';
       E.ci.textContent=d.connection?.isp||d.connection?.org||'—';
     }
-  }catch(e){toast('Geo lookup failed');console.error(e);}
+  }catch(e){toast('Geo lookup failed', false);console.error(e);}
 }
 
 /* ── Input clear ── */
@@ -779,6 +794,23 @@ function applyZoom(z){
 E.zoomIn.addEventListener('click',()=>applyZoom(currentMapZoom+1));
 E.zoomOut.addEventListener('click',()=>applyZoom(currentMapZoom-1));
 
+/* mapLabel button — reset zoom to 3 + re-center on located country */
+function resetMapToCountry(){
+  if(!mapInstance||!cachedGeo) return;
+  const uc=E.country.textContent.replace(/\s*\(.*\)/,'').trim().toLowerCase();
+  for(const f of cachedGeo.features){
+    if((f.properties.name||'').toLowerCase()===uc){
+      const c=L.geoJSON(f).getBounds().getCenter();
+      applyZoom(3); // resets zoom number
+      mapInstance.setView(c,3,{animate:true});
+      return;
+    }
+  }
+  // fallback to dot
+  if(!isNaN(currentLat)) mapInstance.setView([currentLat,currentLon],3,{animate:true});
+}
+E.mapLabel.addEventListener('click',resetMapToCountry);
+
 function toggleFullscreen(){
   isFullscreen=!isFullscreen;
   E.mapBox.classList.toggle('fullscreen',isFullscreen);
@@ -850,7 +882,19 @@ function renderMap(geo){
       layer.on('click',()=>{
         E.mapLabel.textContent=name;
         setMapClock(COUNTRY_TZ[name]||currentTZ);
-        if(m) mapInstance.setView(layer.getBounds().getCenter(),currentMapZoom,{animate:true});
+        if(m){
+          // Normal view: only re-center if at default zoom(3); otherwise leave map, zoom buttons focus dot
+          if(!isFullscreen){
+            if(currentMapZoom===3){
+              mapInstance.setView(layer.getBounds().getCenter(),3,{animate:true});
+            }
+            // else: do nothing — user is zoomed in, let them use zoom buttons
+          } else {
+            // Fullscreen: always re-center on country
+            mapInstance.setView(layer.getBounds().getCenter(),currentMapZoom,{animate:true});
+          }
+        }
+        // other countries: name + clock update, no map movement in either mode
       });
     }
   }).addTo(mapInstance);
@@ -872,7 +916,7 @@ function renderMap(geo){
 }
 
 async function showMap(){
-  if(isNaN(currentLat)){toast('Location unavailable');return;}
+  if(isNaN(currentLat)){toast('Location unavailable', false);return;}
   const vis=E.mapBox.classList.toggle('show');
   E.mapBtn.textContent=vis?'Hide Map':'Show Map';
   if(!vis) return;
@@ -890,13 +934,13 @@ async function showMap(){
       mapInstance.invalidateSize();
       updateZoomUI(currentMapZoom);
     },120);
-  }catch(e){toast('Map failed to load');console.error(e);}
+  }catch(e){toast('Map failed to load', false);console.error(e);}
 }
 E.mapBtn.addEventListener('click',showMap);
 
 /* ── Reload ── */
 E.reloadBtn.addEventListener('click',()=>{
-  if(isLoading){toast('Please wait...');return;}
+  if(isLoading){toast('Please wait...', null);return;}
   currentLat=NaN;currentLon=NaN;
   clearInterval(mapClockTimer);mapClockTimer=null;E.mapTime.textContent='';
   if(mapInstance){mapInstance.remove();mapInstance=null;}
@@ -912,4 +956,4 @@ updateZoomUI(currentMapZoom);
 loadMyIP();
 </script>
 </body>
-                                                                             </html>
+  </html>
