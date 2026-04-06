@@ -1,0 +1,13 @@
+/* Deep Purple */
+:root{
+  --bg:#f0eef8;--text:#1e1830;--border:#a090c8;--label:#6b5a9a;
+  --surface:#f7f5fc;--sv:#e2ddf2;--os:#1e1830;--osv:#7060a0;
+  --p:#7c5cbf;--op:#fff;--pc:#ddd5f5;--opc:#2a1860;
+  --skel-base:#c0b4e0;--skel-shine:#d5ccf0
+}
+body.dark{
+  --bg:#120e1e;--text:#d8d0f0;--border:#2a2040;--label:#9080c0;
+  --surface:#18132a;--sv:#201a34;--os:#d8d0f0;--osv:#9080c0;
+  --p:#9b7fda;--op:#0c0818;--pc:#2e2450;--opc:#ddd5f5;
+  --skel-base:#28203e;--skel-shine:#352a50
+}

@@ -1,0 +1,13 @@
+/* Warm Orange */
+:root{
+  --bg:#fbf4ec;--text:#2d1f0e;--border:#c9a07a;--label:#8a5c2e;
+  --surface:#fdf9f4;--sv:#f5e5d0;--os:#2d1f0e;--osv:#9a7050;
+  --p:#e07a3f;--op:#fff;--pc:#fbe3ce;--opc:#5c2800;
+  --skel-base:#e4c8a0;--skel-shine:#f2ddc0
+}
+body.dark{
+  --bg:#1a120a;--text:#e8d5bc;--border:#3d2510;--label:#b08060;
+  --surface:#221508;--sv:#2e1c0c;--os:#e8d5bc;--osv:#b08060;
+  --p:#e07a3f;--op:#1a0800;--pc:#5c2e10;--opc:#fbe3ce;
+  --skel-base:#3a2210;--skel-shine:#4a2e18
+}
