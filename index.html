@@ -62,7 +62,7 @@ main{max-width:560px;margin:auto;padding:16px}
 .map-box{display:none;margin-top:12px;border:1px solid var(--border);border-radius:12px;overflow:hidden}
 .map-box.show{display:block}
 #mapToolbar{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--surface);border-bottom:1px solid var(--border);gap:6px}
-#mapLabel{font-size:13px;font-weight:600;color:var(--p);min-height:18px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#mapLabel{font-size:15px;font-weight:700;color:var(--opc);min-height:22px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--pc);border-radius:6px;padding:4px 8px}
 #mapTime{font-size:12px;font-weight:700;font-family:monospace;background:var(--pc);color:var(--opc);border:none;border-radius:6px;padding:4px 8px;white-space:nowrap;flex-shrink:0;min-width:84px;text-align:center;letter-spacing:.3px;cursor:pointer;user-select:none;-webkit-user-select:none}
 #zoomCtrl{display:flex;align-items:center;gap:4px}
 .zstep{width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--sv);color:var(--os);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:background .15s,color .15s;display:flex;align-items:center;justify-content:center}
@@ -73,7 +73,9 @@ main{max-width:560px;margin:auto;padding:16px}
 #fsBtn:hover{background:var(--pc);color:var(--opc)}
 #map{height:240px;width:100%;transition:height .2s}
 body:not(.dark) .leaflet-container{background:var(--bg)!important}
-.leaflet-tooltip{background:var(--p);color:#fff;border:none;border-radius:6px;padding:4px 8px;font-size:12px}
+.leaflet-tooltip{background:var(--pc);color:var(--opc);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;font-weight:600;box-shadow:none}
+.leaflet-tooltip-top::before{border-top-color:var(--border)}
+.map-city-tip{background:var(--p)!important;color:var(--op)!important;border-color:var(--p)!important;font-weight:700}
 .map-box.fullscreen{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:2000;border-radius:0;margin:0;border:none}
 .map-box.fullscreen #mapToolbar{padding:10px 14px}
 .map-box.fullscreen #map{height:calc(100vh - 49px)!important}
@@ -244,13 +246,37 @@ const THEME_LINK      = document.getElementById('theme-style');
 const THEME_GRID      = document.getElementById('themeGrid');
 const DEFAULT_THEME   = 'ocean-teal';
 const THEME_STORE_KEY = 'ipinfo-color-theme';
+const THEME_CSS_CACHE = 'ipinfo-theme-css-'; // prefix + themeId
 
-function applyColorTheme(id, save=true){
+// Fix 3: inject cached CSS instantly (avoids FOUC on slow connections)
+function injectThemeCSS(id, cssText){
+  let el=document.getElementById('theme-inline');
+  if(!el){ el=document.createElement('style'); el.id='theme-inline'; document.head.appendChild(el); }
+  el.textContent=cssText;
+  THEME_LINK.disabled=true; // disable link tag — inline takes over
+}
+
+async function applyColorTheme(id, save=true){
   const theme = THEMES.find(t=>t.id===id) || THEMES.find(t=>t.id===DEFAULT_THEME);
   if(!theme) return;
 
-  // Switch the stylesheet href
-  THEME_LINK.href = 'css/themes/' + theme.file;
+  // Fix 3: check sessionStorage for cached CSS
+  const cacheKey=THEME_CSS_CACHE+theme.id;
+  const cached=sessionStorage.getItem(cacheKey);
+  if(cached){
+    injectThemeCSS(theme.id, cached);
+  } else {
+    // Not cached: load via link tag normally, then cache it
+    const el=document.getElementById('theme-inline');
+    if(el) el.textContent='';
+    THEME_LINK.disabled=false;
+    THEME_LINK.href='css/themes/'+theme.file;
+    // Fetch and cache for next time
+    fetch('css/themes/'+theme.file)
+      .then(r=>r.text())
+      .then(css=>{ try{sessionStorage.setItem(cacheKey,css);}catch(e){} })
+      .catch(()=>{});
+  }
 
   // Mark active card
   document.querySelectorAll('.theme-card').forEach(c=>{
@@ -579,13 +605,24 @@ async function lookupCustom(){
     }catch(e){toast('DNS resolution failed');console.error(e);return;}
   }
   try{
-    const d=await fetchJSON(`https://ipwho.is/${encodeURIComponent(ipToQuery)}`);
-    if(!d.success){toast(d.message||'Lookup failed');return;}
-    E.cRes.style.display='block';
-    E.cc.textContent=[d.country,d.country_code?`(${d.country_code})`:''].filter(Boolean).join(' ')||'—';
-    E.cct.textContent=[d.city,d.region].filter(Boolean).join(', ')||'—';
-    E.cl.textContent=(d.latitude&&d.longitude)?`${parseFloat(d.latitude).toFixed(4)}, ${parseFloat(d.longitude).toFixed(4)}`:'—';
-    E.ci.textContent=d.connection?.isp||d.connection?.org||'—';
+    // Try ipwho.is first, fallback to ipapi.co/{ip}
+    let d = await fetchJSON(`https://ipwho.is/${encodeURIComponent(ipToQuery)}`);
+    if(!d.success){
+      // fallback
+      d = await fetchJSON(`https://ipapi.co/${encodeURIComponent(ipToQuery)}/json/`);
+      if(d.error) throw new Error(d.reason||'lookup failed');
+      E.cRes.style.display='block';
+      E.cc.textContent=[d.country_name,d.country_code?`(${d.country_code})`:''].filter(Boolean).join(' ')||'—';
+      E.cct.textContent=[d.city,d.region].filter(Boolean).join(', ')||'—';
+      E.cl.textContent=(d.latitude&&d.longitude)?`${parseFloat(d.latitude).toFixed(4)}, ${parseFloat(d.longitude).toFixed(4)}`:'—';
+      E.ci.textContent=d.org||'—';
+    } else {
+      E.cRes.style.display='block';
+      E.cc.textContent=[d.country,d.country_code?`(${d.country_code})`:''].filter(Boolean).join(' ')||'—';
+      E.cct.textContent=[d.city,d.region].filter(Boolean).join(', ')||'—';
+      E.cl.textContent=(d.latitude&&d.longitude)?`${parseFloat(d.latitude).toFixed(4)}, ${parseFloat(d.longitude).toFixed(4)}`:'—';
+      E.ci.textContent=d.connection?.isp||d.connection?.org||'—';
+    }
   }catch(e){toast('Geo lookup failed');console.error(e);}
 }
 
@@ -705,8 +742,23 @@ async function loadTopoJSON(){
 }
 async function loadWorldGeo(){
   if(cachedGeo) return cachedGeo;
+
+  // Fix 3: try sessionStorage cache first (avoids re-download on page revisit)
+  const GEO_KEY='ipinfo-worldgeo-v1';
+  try{
+    const stored=sessionStorage.getItem(GEO_KEY);
+    if(stored){
+      cachedGeo=JSON.parse(stored);
+      return cachedGeo;
+    }
+  }catch(e){ /* storage full or parse error — ignore, fetch fresh */ }
+
   const d=await fetchJSON('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json');
   cachedGeo=topojson.feature(d,d.objects.countries);
+
+  // Store for next visit (GeoJSON ~600KB — fits fine in 5MB quota)
+  try{ sessionStorage.setItem(GEO_KEY,JSON.stringify(cachedGeo)); }catch(e){}
+
   return cachedGeo;
 }
 
@@ -769,14 +821,20 @@ function renderMap(geo){
   if(geoLayer){geoLayer.remove();geoLayer=null;}
   if(cityMarker){cityMarker.remove();cityMarker=null;}
   const primary=getComputedStyle(document.body).getPropertyValue('--p').trim();
+  const pcColor=getComputedStyle(document.body).getPropertyValue('--pc').trim();
   const uc=E.country.textContent.replace(/\s*\(.*\)/,'').trim().toLowerCase();
   let centered=false;
 
   geoLayer=L.geoJSON(geo,{
     style:f=>{
       const m=(f.properties.name||'').toLowerCase()===uc;
-      return{color:m?(isDark?'#2e7d32':primary):(isDark?'#444':'#8fa8b8'),weight:m?2:1.2,
-             fillColor:m?primary:(isDark?'#222':'#1a1f23'),fillOpacity:m?0.45:(isDark?0.2:0.18)};
+      return{
+        // Fix 2: dark mode matched-country border = --pc (theme dropdown color)
+        color:  m?(isDark?pcColor:primary):(isDark?'#444':'#8fa8b8'),
+        weight: m?2:1.2,
+        fillColor: m?primary:(isDark?'#222':'#1a1f23'),
+        fillOpacity: m?0.45:(isDark?0.2:0.18)
+      };
     },
     onEachFeature:(f,layer)=>{
       const name=f.properties.name||'Unknown';
@@ -799,10 +857,17 @@ function renderMap(geo){
 
   if(!isNaN(currentLat)){
     cityMarker=L.circleMarker([currentLat,currentLon],{
-      radius:7,color:isDark?'#16a34a':'#15803d',weight:2.5,
-      fillColor:isDark?'#4ade80':'#22c55e',fillOpacity:1
+      radius:7,
+      color:    isDark?pcColor:primary,   // Fix 5: use theme color
+      weight:   2.5,
+      fillColor:isDark?pcColor:primary,
+      fillOpacity:0.85
     }).addTo(mapInstance);
-    cityMarker.bindTooltip(E.city.textContent||'Your location',{direction:'top'});
+    // Fix 5: tooltip uses CSS vars via className
+    cityMarker.bindTooltip(E.city.textContent||'Your location',{
+      direction:'top',
+      className:'map-city-tip'
+    });
   }
 }
 
@@ -847,4 +912,4 @@ updateZoomUI(currentMapZoom);
 loadMyIP();
 </script>
 </body>
-  </html>
+                                                                             </html>
