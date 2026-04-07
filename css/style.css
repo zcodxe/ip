@@ -14,7 +14,7 @@ button{cursor:pointer;border:none;border-radius:20px;font-weight:600;font-family
 .btn{
   background:var(--p);color:var(--op);padding:8px 16px;
   min-width:72px;display:inline-flex;align-items:center;
-  justify-content:center;font-size:14px;transition:opacity .2s,background .2s;
+  justify-content:center;font-size:15px;font-weight: 700;transition:opacity .2s,background .2s;
   border-radius:20px
 }
 .btn:hover{opacity:.85}
@@ -45,10 +45,10 @@ main{max-width:560px;margin:auto;padding:16px}
 .utc-badge{display:inline-block;margin-left:8px;font-size:11px;font-weight:600;background:var(--pc);color:var(--opc);border-radius:6px;padding:1px 6px;vertical-align:middle;letter-spacing:.2px}
 
 /* ── Skeleton ── */
-.skel{display:inline-block;border-radius:6px;background:linear-gradient(90deg,var(--skel-base) 25%,var(--skel-shine) 50%,var(--skel-base) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;height:16px;vertical-align:middle}
-@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-.skel-latlng{width:140px}.skel-city{width:160px}.skel-isp{width:200px}
-.skel-tz{width:130px}.skel-ipv4{width:110px}.skel-ipv6{width:220px}
+:root{--skel-duration:6s;--skel-base:rgba(0,0,0,0.12);--skel-shine:rgba(255,255,255,0.28)}
+.skel{display:inline-block;border-radius:6px;height:16px;vertical-align:middle;background:linear-gradient(90deg,var(--skel-base) 16%,var(--skel-shine) 50%,var(--skel-base) 84%);background-size:300% 100%;animation:shimmer var(--skel-duration) linear infinite;will-change:background-position;opacity:1;box-shadow:0 0 0 1px rgba(0,0,0,0.02) inset}
+.skel-latlng{width:140px}.skel-city{width:160px}.skel-isp{width:200px}.skel-tz{width:130px}.skel-ipv4{width:110px}.skel-ipv6{width:220px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-20% 0}}
 
 /* ── Sections ── */
 .section{margin-top:12px;border-radius:6px;overflow:hidden;border:1px solid var(--border)}
@@ -209,7 +209,7 @@ input:focus{outline:none;border-color:var(--p)}
 #themeSheetClose{
   width:28px;height:28px;border-radius:6px;
   background:var(--sv);color:var(--os);
-  font-size:18px;line-height:1;
+  font-size:30px;line-height:1;
   display:flex;align-items:center;justify-content:center;
   border:none;cursor:pointer;font-weight:400
 }
