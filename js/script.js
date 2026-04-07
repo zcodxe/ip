@@ -4,14 +4,13 @@
    THEME SYSTEM
    ══════════════════════════════════════════ */
 const THEME_LINK      = document.getElementById('theme-style');
-const THEME_GRID      = document.getElementById('themeGrid');
 const DEFAULT_THEME   = 'ocean-teal';
 const THEME_STORE_KEY = 'ipinfo-color-theme';
 const THEME_CSS_PFX   = 'ipinfo-theme-css-';
 
 function injectThemeCSS(cssText){
   let el = document.getElementById('theme-inline');
-  if(!el){ el = document.createElement('style'); el.id = 'theme-inline'; document.head.appendChild(el); }
+  if(!el){ el=document.createElement('style'); el.id='theme-inline'; document.head.appendChild(el); }
   el.textContent = cssText;
   THEME_LINK.disabled = true;
 }
@@ -20,7 +19,7 @@ function applyColorTheme(id, save=true){
   const theme = THEMES.find(t=>t.id===id) || THEMES.find(t=>t.id===DEFAULT_THEME);
   if(!theme) return;
 
-  const cacheKey = THEME_CSS_PFX + theme.id;
+  const cacheKey = THEME_CSS_PFX+theme.id;
   const cached   = sessionStorage.getItem(cacheKey);
   if(cached){
     injectThemeCSS(cached);
@@ -28,8 +27,8 @@ function applyColorTheme(id, save=true){
     const el = document.getElementById('theme-inline');
     if(el) el.textContent = '';
     THEME_LINK.disabled = false;
-    THEME_LINK.href = 'css/themes/' + theme.file;
-    fetch('css/themes/' + theme.file)
+    THEME_LINK.href = 'css/themes/'+theme.file;
+    fetch('css/themes/'+theme.file)
       .then(r=>r.text())
       .then(css=>{ try{ sessionStorage.setItem(cacheKey,css); }catch(e){} })
       .catch(()=>{});
@@ -39,20 +38,19 @@ function applyColorTheme(id, save=true){
     c.classList.toggle('active', c.dataset.id===theme.id);
   });
 
-  /* FIX 4: Re-style map layer colors WITHOUT re-centering (use setStyle not renderMap) */
+  /* Re-style map WITHOUT re-centering */
   if(typeof geoLayer!=='undefined' && geoLayer && mapInstance){
     const uc = E.country.textContent.replace(/\s*\(.*\)/,'').trim().toLowerCase();
-    // CSS vars may not have updated yet — read after a micro-task
     requestAnimationFrame(()=>{
-      const primary  = getComputedStyle(document.body).getPropertyValue('--p').trim();
-      const pcColor  = getComputedStyle(document.body).getPropertyValue('--pc').trim();
+      const primary = getComputedStyle(document.body).getPropertyValue('--p').trim();
+      const pcColor = getComputedStyle(document.body).getPropertyValue('--pc').trim();
       geoLayer.setStyle(f=>{
-        const m = (f.properties.name||'').toLowerCase()===uc;
+        const m=(f.properties.name||'').toLowerCase()===uc;
         return{
-          color:       m ? (isDark?pcColor:primary) : (isDark?'#444':'#8fa8b8'),
-          weight:      m ? 2 : 1.2,
-          fillColor:   m ? primary : (isDark?'#222':'#1a1f23'),
-          fillOpacity: m ? 0.45 : (isDark?0.2:0.18)
+          color:       m?(isDark?pcColor:primary):(isDark?'#444':'#8fa8b8'),
+          weight:      m?2:1.2,
+          fillColor:   m?primary:(isDark?'#222':'#1a1f23'),
+          fillOpacity: m?0.45:(isDark?0.2:0.18)
         };
       });
     });
@@ -61,40 +59,58 @@ function applyColorTheme(id, save=true){
   if(save) localStorage.setItem(THEME_STORE_KEY, theme.id);
 }
 
+/* Build the modal grid */
 function buildThemeGrid(){
-  THEME_GRID.innerHTML = '';
+  const grid = document.getElementById('themeGridModal');
+  if(!grid) return;
+  grid.innerHTML = '';
   THEMES.forEach(t=>{
     const card = document.createElement('div');
-    card.className   = 'theme-card';
-    card.dataset.id  = t.id;
+    card.className  = 'theme-card';
+    card.dataset.id = t.id;
 
-    const swatches = document.createElement('div');
-    swatches.className = 'theme-swatches';
-    t.colors.forEach(c=>{
-      const s = document.createElement('span');
-      s.className = 'theme-swatch';
-      s.style.background = c;
-      swatches.appendChild(s);
-    });
+    /* Color preview box */
+    const preview = document.createElement('div');
+    preview.className = 'theme-preview';
+    preview.style.setProperty('--preview-bg',     t.colors[0]);
+    preview.style.setProperty('--preview-accent', t.colors[1]);
 
     const name = document.createElement('span');
     name.className   = 'theme-name';
     name.textContent = t.name;
 
-    card.appendChild(swatches);
+    card.appendChild(preview);
     card.appendChild(name);
-    card.addEventListener('click', ()=>applyColorTheme(t.id));
-    THEME_GRID.appendChild(card);
+    card.addEventListener('click', ()=>{
+      applyColorTheme(t.id);
+      closeThemeModal();
+    });
+    grid.appendChild(card);
   });
 }
 
-function initTheme(){
+/* Modal open / close */
+function openThemeModal(){
+  const modal = document.getElementById('themeModal');
+  if(!modal) return;
   buildThemeGrid();
-  const saved = localStorage.getItem(THEME_STORE_KEY) || DEFAULT_THEME;
-  applyColorTheme(saved, false);
-  document.querySelectorAll('.theme-card').forEach(c=>{
+  // Mark active
+  const saved = localStorage.getItem(THEME_STORE_KEY)||DEFAULT_THEME;
+  modal.querySelectorAll('.theme-card').forEach(c=>{
     c.classList.toggle('active', c.dataset.id===saved);
   });
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeThemeModal(){
+  const modal = document.getElementById('themeModal');
+  if(modal){ modal.classList.remove('open'); document.body.style.overflow = ''; }
+}
+
+function initTheme(){
+  buildThemeGrid(); // pre-build (not visible yet)
+  const saved = localStorage.getItem(THEME_STORE_KEY)||DEFAULT_THEME;
+  applyColorTheme(saved, false);
 }
 
 /* ══════════════════════════════════════════
@@ -122,11 +138,31 @@ const E = {
   rBox:$('rBox'), rIP:$('rIP'),
   cRes:$('cRes'), cc:$('cc'), cl:$('cl'), cct:$('cct'), ci:$('ci'),
   toast:$('toast'), themeBtn:$('themeBtn'), reloadBtn:$('reloadBtn'),
-  bar:$('cooldownBar'), mapLabel:$('mapLabel'),
+  colorBtn:$('colorBtn'),
+  bar:$('cooldownBar'), mapLabel:$('mapLabel'), mapToolbar:$('mapToolbar'),
   zoomNum:$('zoomNum'), zoomIn:$('zoomIn'), zoomOut:$('zoomOut'),
   fsBtn:$('fsBtn'), mapTime:$('mapTime'),
   toastIcon:$('toastIcon'), toastMsg:$('toastMsg')
 };
+
+/* ── mapLabel position: mobile=inside map, desktop=in toolbar ── */
+function positionMapLabel(){
+  const isMobile = window.innerWidth <= 480;
+  const label = E.mapLabel;
+  if(!label) return;
+  if(isMobile && !isFullscreen){
+    // Place directly in mapBox (before map div) — CSS makes it absolute
+    if(label.parentElement !== E.mapBox){
+      E.mapBox.insertBefore(label, E.mapBox.firstChild);
+    }
+  } else {
+    // Place first child of toolbar
+    if(label.parentElement !== E.mapToolbar){
+      E.mapToolbar.insertBefore(label, E.mapToolbar.firstChild);
+    }
+  }
+}
+window.addEventListener('resize', ()=>{ if(E.mapBox.classList.contains('show')) positionMapLabel(); });
 
 /* ── Skeleton helpers ── */
 const SKEL_CLASSES = {
@@ -142,16 +178,15 @@ function clearSkel(el, html, isHTML=false){
   if(isHTML) el.innerHTML = html; else el.textContent = html;
 }
 
-/* ── Toast (FIX 3: circle around icon, same color) ── */
-// ok=true → ✓ green circle, ok=false → ✕ red circle, ok=null → no icon
+/* ── Toast ── */
 function toast(msg, ok=null, dur=2400){
   clearTimeout(toastTimer);
   E.toastMsg.textContent = msg;
   if(ok===true){
-    E.toastIcon.innerHTML = '<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M10.6484 5.64648C10.8434 5.45148 11.1605 5.45148 11.3555 5.64648C11.5498 5.84137 11.5499 6.15766 11.3555 6.35254L7.35547 10.3525C7.25747 10.4495 7.12898 10.499 7.00098 10.499C6.87299 10.499 6.74545 10.4505 6.64746 10.3525L4.64746 8.35254C4.45247 8.15754 4.45248 7.84148 4.64746 7.64648C4.84246 7.45148 5.15949 7.45148 5.35449 7.64648L7 9.29199L10.6465 5.64648H10.6484Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M8 1C11.86 1 15 4.14 15 8C15 11.86 11.86 15 8 15C4.14 15 1 11.86 1 8C1 4.14 4.14 1 8 1ZM8 2C4.691 2 2 4.691 2 8C2 11.309 4.691 14 8 14C11.309 14 14 11.309 14 8C14 4.691 11.309 2 8 2Z"/></svg>';
+    E.toastIcon.textContent = '✓';
     E.toastIcon.className   = 'toast-icon ok';
   } else if(ok===false){
-    E.toastIcon.textContent = '✖';
+    E.toastIcon.textContent = '✕';
     E.toastIcon.className   = 'toast-icon fail';
   } else {
     E.toastIcon.textContent = '';
@@ -159,23 +194,26 @@ function toast(msg, ok=null, dur=2400){
   }
   E.toast.classList.add('show');
   toastTimer = setTimeout(()=>E.toast.classList.remove('show'), dur);
-     }
+}
 
 /* ── Copy (delegated) ── */
 document.addEventListener('click', e=>{
   if(!e.target.classList.contains('info-value')) return;
   const t = e.target.textContent.trim();
-  if(!t || t==='—') return;
+  if(!t||t==='—') return;
   navigator.clipboard.writeText(t)
-    .then(()=>toast('Copied', true))
+    .then(()=>toast('Copied: '+t, true))
     .catch(()=>toast('Copy failed', false));
 });
+
 /* ── Dark / Light mode toggle ── */
 let isDark = localStorage.getItem('theme')==='dark';
+const THEME_SVG = `<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M8 1.00195C6.61553 1.00195 5.26216 1.4125 4.11101 2.18167C2.95987 2.95084 2.06266 4.04409 1.53285 5.32317C1.00303 6.60225 0.86441 8.00972 1.13451 9.36759C1.4046 10.7255 2.07129 11.9727 3.05026 12.9517C4.02922 13.9307 5.27651 14.5974 6.63437 14.8675C7.99224 15.1375 9.3997 14.9989 10.6788 14.4691C11.9579 13.9393 13.0511 13.0421 13.8203 11.8909C14.5895 10.7398 15 9.38642 15 8.00195C15 6.14544 14.2625 4.36496 12.9498 3.05221C11.637 1.73945 9.85652 1.00195 8 1.00195ZM8 14.002V2.00195C9.5913 2.00195 11.1174 2.63409 12.2426 3.75931C13.3679 4.88453 14 6.41065 14 8.00195C14 9.59325 13.3679 11.1194 12.2426 12.2446C11.1174 13.3698 9.5913 14.002 8 14.002Z"/></svg>`;
+
 function applyDarkMode(){
   document.body.classList.toggle('dark', isDark);
-  E.themeBtn.textContent = isDark ? 'Light' : 'Dark';
-  /* FIX 4: use setStyle, not renderMap */
+  E.themeBtn.innerHTML = THEME_SVG;
+  E.themeBtn.title = isDark ? 'Switch to Light' : 'Switch to Dark';
   if(geoLayer && mapInstance){
     const uc = E.country.textContent.replace(/\s*\(.*\)/,'').trim().toLowerCase();
     requestAnimationFrame(()=>{
@@ -199,6 +237,14 @@ E.themeBtn.addEventListener('click', ()=>{
   localStorage.setItem('theme', isDark?'dark':'light');
   applyDarkMode();
 });
+
+/* Color button */
+if(E.colorBtn) E.colorBtn.addEventListener('click', openThemeModal);
+// Modal backdrop + close btn
+document.getElementById('themeModal')?.addEventListener('click', e=>{
+  if(e.target.id==='themeModal') closeThemeModal();
+});
+document.getElementById('themeSheetClose')?.addEventListener('click', closeThemeModal);
 
 /* ── Section toggle ── */
 function toggleSection(id, btn){
@@ -290,9 +336,9 @@ function toggleClock(){ if(clockRunning) stopLiveClock(); else startLiveClock();
 /* ── Populate ── */
 function populate(d){
   E.country.textContent = [d.country, d.countryCode?`(${d.countryCode})`:''].filter(Boolean).join(' ') || '—';
-  const lat = parseFloat(d.lat), lon = parseFloat(d.lon);
+  const lat=parseFloat(d.lat), lon=parseFloat(d.lon);
   if(!isNaN(lat)){
-    currentLat = lat; currentLon = lon;
+    currentLat=lat; currentLon=lon;
     clearSkel(E.latlng, `${lat.toFixed(4)}, ${lon.toFixed(4)}`);
   } else clearSkel(E.latlng, '—');
   clearSkel(E.city, [d.city,d.regionName].filter(Boolean).join(', ') || '—');
@@ -312,7 +358,7 @@ function populate(d){
   } else clearSkel(E.tz, '—');
 }
 
-/* ── GEO SOURCES (all HTTPS, all free, no key) ── */
+/* ── GEO SOURCES ── */
 async function geoFromIpWhoIs(){
   const d = await fetchJSON('https://ipwho.is/');
   if(!d.success) throw new Error('ipwho.is: '+d.message);
@@ -343,9 +389,9 @@ async function loadMyIP(){
     fetchJSON('https://api.ipify.org?format=json'),
     fetchJSON('https://api64.ipify.org?format=json')
   ]);
-  if(v4.status==='fulfilled' && v4.value?.ip) clearSkel(E.ipv4, v4.value.ip);
+  if(v4.status==='fulfilled'&&v4.value?.ip) clearSkel(E.ipv4, v4.value.ip);
   else clearSkel(E.ipv4, 'Unavailable');
-  if(v6.status==='fulfilled' && v6.value?.ip){
+  if(v6.status==='fulfilled'&&v6.value?.ip){
     const ip = v6.value.ip;
     if(ip.includes(':')) clearSkel(E.ipv6, ip);
     else{ clearSkel(E.ipv6,'Unavailable'); if(E.ipv4.textContent==='—') clearSkel(E.ipv4,ip); }
@@ -353,25 +399,23 @@ async function loadMyIP(){
 
   let geo = null;
   for(const src of [geoFromIpWhoIs, geoFromFreeIpApi, geoFromIpApiCo]){
-    try{ geo = await src(); break; }
+    try{ geo=await src(); break; }
     catch(e){ console.warn(src.name, e.message); }
   }
   if(geo) populate(geo);
   else{
     E.country.textContent = 'Location unavailable';
     ['latlng','city','isp','tz'].forEach(k=>clearSkel(E[k],'—'));
-    toast('All geo sources failed — check your connection', false);
+    toast('All geo sources failed', false);
   }
   startCooldown();
 }
 
-/* ── Custom IP / Domain lookup (FIX 1) ── */
+/* ── Custom IP / Domain lookup ── */
 async function lookupCustom(){
   const raw = E.inp.value.trim();
   if(!raw){ toast('Enter an IP or domain', null); return; }
-  E.rBox.style.display = 'none';
-  E.cRes.style.display = 'none';
-  E.rIP.innerHTML = '';
+  E.rBox.style.display='none'; E.cRes.style.display='none'; E.rIP.innerHTML='';
 
   const ipv4Re = /^(\d{1,3}\.){3}\d{1,3}$/;
   const ipv6Re = /^[0-9a-fA-F:]+$/;
@@ -384,63 +428,57 @@ async function lookupCustom(){
         fetchJSON(`https://dns.google/resolve?name=${encodeURIComponent(raw)}&type=A`),
         fetchJSON(`https://dns.google/resolve?name=${encodeURIComponent(raw)}&type=AAAA`)
       ]);
-      const v4s = (r4.Answer||[]).filter(x=>x.type===1).map(x=>x.data);
-      const v6s = (r6.Answer||[]).filter(x=>x.type===28).map(x=>x.data);
-      const all = [...new Set([...v4s,...v6s])];
+      const v4s=(r4.Answer||[]).filter(x=>x.type===1).map(x=>x.data);
+      const v6s=(r6.Answer||[]).filter(x=>x.type===28).map(x=>x.data);
+      const all=[...new Set([...v4s,...v6s])];
       if(!all.length){ toast('Could not resolve domain', false); return; }
-
-      E.rBox.style.display = 'block';
+      E.rBox.style.display='block';
       all.forEach(ip=>{
-        const chip = document.createElement('span');
-        chip.className = 'chip '+(ipv4Re.test(ip)?'ipv4':'ipv6');
-        chip.textContent = ip; chip.title = 'Click to lookup';
-        chip.addEventListener('click', ()=>{ E.inp.value=ip; E.clearBtn.classList.add('show'); lookupCustom(); });
+        const chip=document.createElement('span');
+        chip.className='chip '+(ipv4Re.test(ip)?'ipv4':'ipv6');
+        chip.textContent=ip; chip.title='Click to lookup';
+        chip.addEventListener('click',()=>{ E.inp.value=ip; E.clearBtn.classList.add('show'); lookupCustom(); });
         E.rIP.appendChild(chip);
       });
-      // FIX 1: prefer IPv4 for lookup since most geo APIs handle it better
-      ipToQuery = v4s[0] || v6s[0];
+      ipToQuery = v4s[0]||v6s[0];
     }catch(e){ toast('DNS resolution failed', false); console.error(e); return; }
   }
 
-  /* FIX 1: try 3 APIs in sequence so lookup never silently fails */
   let found = false;
-  // Source 1: ipwho.is
   try{
     const d = await fetchJSON(`https://ipwho.is/${encodeURIComponent(ipToQuery)}`);
     if(d.success && d.country){
-      E.cRes.style.display = 'block';
+      E.cRes.style.display='block';
       E.cc.textContent  = [d.country, d.country_code?`(${d.country_code})`:''].filter(Boolean).join(' ')||'—';
       E.cct.textContent = [d.city, d.region].filter(Boolean).join(', ')||'—';
-      E.cl.textContent  = (d.latitude&&d.longitude) ? `${parseFloat(d.latitude).toFixed(4)}, ${parseFloat(d.longitude).toFixed(4)}` : '—';
+      E.cl.textContent  = (d.latitude&&d.longitude)?`${parseFloat(d.latitude).toFixed(4)}, ${parseFloat(d.longitude).toFixed(4)}`:'—';
       E.ci.textContent  = d.connection?.isp||d.connection?.org||'—';
       found = true;
     }
   }catch(e){ console.warn('ipwho.is custom:', e.message); }
 
-  // Source 2: ipapi.co (fallback)
   if(!found){
     try{
       const d = await fetchJSON(`https://ipapi.co/${encodeURIComponent(ipToQuery)}/json/`);
       if(!d.error && d.country_name){
-        E.cRes.style.display = 'block';
+        E.cRes.style.display='block';
         E.cc.textContent  = [d.country_name, d.country_code?`(${d.country_code})`:''].filter(Boolean).join(' ')||'—';
         E.cct.textContent = [d.city, d.region].filter(Boolean).join(', ')||'—';
-        E.cl.textContent  = (d.latitude&&d.longitude) ? `${parseFloat(d.latitude).toFixed(4)}, ${parseFloat(d.longitude).toFixed(4)}` : '—';
+        E.cl.textContent  = (d.latitude&&d.longitude)?`${parseFloat(d.latitude).toFixed(4)}, ${parseFloat(d.longitude).toFixed(4)}`:'—';
         E.ci.textContent  = d.org||'—';
         found = true;
       }
     }catch(e){ console.warn('ipapi.co custom:', e.message); }
   }
 
-  // Source 3: freeipapi.com (fallback)
   if(!found){
     try{
       const d = await fetchJSON(`https://freeipapi.com/api/json/${encodeURIComponent(ipToQuery)}`);
       if(d.ipAddress && d.countryName){
-        E.cRes.style.display = 'block';
+        E.cRes.style.display='block';
         E.cc.textContent  = [d.countryName, d.countryCode?`(${d.countryCode})`:''].filter(Boolean).join(' ')||'—';
         E.cct.textContent = [d.cityName, d.regionName].filter(Boolean).join(', ')||'—';
-        E.cl.textContent  = (d.latitude&&d.longitude) ? `${parseFloat(d.latitude).toFixed(4)}, ${parseFloat(d.longitude).toFixed(4)}` : '—';
+        E.cl.textContent  = (d.latitude&&d.longitude)?`${parseFloat(d.latitude).toFixed(4)}, ${parseFloat(d.longitude).toFixed(4)}`:'—';
         E.ci.textContent  = d.isp||'—';
         found = true;
       }
@@ -454,11 +492,8 @@ async function lookupCustom(){
 E.inp.addEventListener('input', ()=>E.clearBtn.classList.toggle('show', E.inp.value.length>0));
 E.inp.addEventListener('keydown', e=>{ if(e.key==='Enter') lookupCustom(); });
 E.clearBtn.addEventListener('click', ()=>{
-  E.inp.value = '';
-  E.clearBtn.classList.remove('show');
-  E.rBox.style.display = 'none';
-  E.cRes.style.display = 'none';
-  E.rIP.innerHTML = '';
+  E.inp.value=''; E.clearBtn.classList.remove('show');
+  E.rBox.style.display='none'; E.cRes.style.display='none'; E.rIP.innerHTML='';
   E.inp.focus();
 });
 
@@ -554,7 +589,7 @@ function setMapClock(tzId){
   renderMapTime();
   mapClockTimer = setInterval(renderMapTime, 1000);
 }
-E.mapTime.addEventListener('click', ()=>{ mapTimeMode = mapTimeMode==='live' ? 'utc' : 'live'; renderMapTime(); });
+E.mapTime.addEventListener('click', ()=>{ mapTimeMode=mapTimeMode==='live'?'utc':'live'; renderMapTime(); });
 
 /* ══════════════════════════════
    MAP
@@ -562,10 +597,9 @@ E.mapTime.addEventListener('click', ()=>{ mapTimeMode = mapTimeMode==='live' ? '
 async function loadTopoJSON(){
   if(window.topojson) return;
   await new Promise((res,rej)=>{
-    const s = document.createElement('script');
-    s.src = 'https://unpkg.com/topojson-client@3/dist/topojson-client.min.js';
-    s.onload = res; s.onerror = rej;
-    document.body.appendChild(s);
+    const s=document.createElement('script');
+    s.src='https://unpkg.com/topojson-client@3/dist/topojson-client.min.js';
+    s.onload=res; s.onerror=rej; document.body.appendChild(s);
   });
 }
 async function loadWorldGeo(){
@@ -573,7 +607,7 @@ async function loadWorldGeo(){
   const GEO_KEY = 'ipinfo-worldgeo-v1';
   try{
     const stored = sessionStorage.getItem(GEO_KEY);
-    if(stored){ cachedGeo = JSON.parse(stored); return cachedGeo; }
+    if(stored){ cachedGeo=JSON.parse(stored); return cachedGeo; }
   }catch(e){}
   const d = await fetchJSON('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json');
   cachedGeo = topojson.feature(d, d.objects.countries);
@@ -598,28 +632,52 @@ function applyZoom(z){
 E.zoomIn.addEventListener('click',  ()=>applyZoom(currentMapZoom+1));
 E.zoomOut.addEventListener('click', ()=>applyZoom(currentMapZoom-1));
 
-/* mapLabel button — reset to zoom 3 centered on country */
+/* FIX 3: mapLabel reset — also resets label text and clock to located country */
 function resetMapToCountry(){
   if(!mapInstance||!cachedGeo) return;
   const uc = E.country.textContent.replace(/\s*\(.*\)/,'').trim().toLowerCase();
   for(const f of cachedGeo.features){
     if((f.properties.name||'').toLowerCase()===uc){
+      const name = f.properties.name;
       const c = L.geoJSON(f).getBounds().getCenter();
       updateZoomUI(3);
       mapInstance.setView(c, 3, {animate:true});
+      E.mapLabel.textContent = name;   // reset label
+      setMapClock(currentTZ);          // reset clock to own TZ
       return;
     }
   }
   if(!isNaN(currentLat)) mapInstance.setView([currentLat,currentLon], 3, {animate:true});
+  setMapClock(currentTZ);
 }
 E.mapLabel.addEventListener('click', resetMapToCountry);
 
-/* FIX 2: Fullscreen — toolbar always visible, never behind browser chrome */
+/* FIX 1+2: Fullscreen toolbar fix + persistent tooltip (no auto-erase) */
+let fsTooltipLayer = null;
+
+function showFsTip(latlng, name){
+  // Remove previous; show new persistent tooltip at click point
+  if(fsTooltipLayer){ fsTooltipLayer.remove(); fsTooltipLayer=null; }
+  fsTooltipLayer = L.tooltip({
+    permanent: true,
+    direction: 'top',
+    className: 'map-click-tip',
+    offset: [0, -6]
+  })
+  .setLatLng(latlng)
+  .setContent(name)
+  .addTo(mapInstance);
+  // NOT auto-removed — stays until next tap on any country
+}
+
 function toggleFullscreen(){
   isFullscreen = !isFullscreen;
   E.mapBox.classList.toggle('fullscreen', isFullscreen);
   E.fsBtn.innerHTML = isFullscreen ? '&#x2715;' : '&#x26F6;';
   E.fsBtn.title = isFullscreen ? 'Exit full screen' : 'Full screen';
+
+  // Reposition mapLabel after fullscreen state changes
+  positionMapLabel();
 
   if(mapInstance){
     if(isFullscreen){
@@ -632,6 +690,8 @@ function toggleFullscreen(){
       mapInstance.scrollWheelZoom.disable();
       mapInstance.touchZoom.disable();
       mapInstance.doubleClickZoom.disable();
+      // Clear FS tooltip on exit
+      if(fsTooltipLayer){ fsTooltipLayer.remove(); fsTooltipLayer=null; }
     }
     setTimeout(()=>{
       mapInstance.invalidateSize();
@@ -642,7 +702,7 @@ function toggleFullscreen(){
           if((f.properties.name||'').toLowerCase()===uc){
             const c = L.geoJSON(f).getBounds().getCenter();
             mapInstance.setView(c, currentMapZoom, {animate:false});
-            found = true; break;
+            found=true; break;
           }
         }
         if(!found && !isNaN(currentLat))
@@ -654,27 +714,11 @@ function toggleFullscreen(){
 E.fsBtn.addEventListener('click', toggleFullscreen);
 document.addEventListener('keydown', e=>{ if(e.key==='Escape'&&isFullscreen) toggleFullscreen(); });
 
-/* ── Floating country tooltip in fullscreen (FIX 5) ── */
-let fsTooltip = null;
-function showFsTip(latlng, name){
-  if(fsTooltip){ fsTooltip.remove(); fsTooltip=null; }
-  fsTooltip = L.tooltip({
-    permanent: false,
-    direction: 'top',
-    className: 'map-click-tip',
-    offset: [0, -4]
-  })
-  .setLatLng(latlng)
-  .setContent(name)
-  .addTo(mapInstance);
-  setTimeout(()=>{ if(fsTooltip){ fsTooltip.remove(); fsTooltip=null; } }, 2000);
-}
-
 function renderMap(geo){
   if(!mapInstance) return;
-  if(geoLayer)  { geoLayer.remove();   geoLayer   = null; }
-  if(cityMarker){ cityMarker.remove(); cityMarker = null; }
-  if(fsTooltip) { fsTooltip.remove();  fsTooltip  = null; }
+  if(geoLayer)  { geoLayer.remove();   geoLayer=null; }
+  if(cityMarker){ cityMarker.remove(); cityMarker=null; }
+  if(fsTooltipLayer){ fsTooltipLayer.remove(); fsTooltipLayer=null; }
 
   const primary = getComputedStyle(document.body).getPropertyValue('--p').trim();
   const pcColor = getComputedStyle(document.body).getPropertyValue('--pc').trim();
@@ -683,16 +727,16 @@ function renderMap(geo){
 
   geoLayer = L.geoJSON(geo, {
     style: f=>{
-      const m = (f.properties.name||'').toLowerCase()===uc;
+      const m=(f.properties.name||'').toLowerCase()===uc;
       return{
-        color:       m ? (isDark?pcColor:primary) : (isDark?'#444':'#8fa8b8'),
-        weight:      m ? 2 : 1.2,
-        fillColor:   m ? primary : (isDark?'#222':'#1a1f23'),
-        fillOpacity: m ? 0.45 : (isDark?0.2:0.18)
+        color:       m?(isDark?pcColor:primary):(isDark?'#444':'#8fa8b8'),
+        weight:      m?2:1.2,
+        fillColor:   m?primary:(isDark?'#222':'#1a1f23'),
+        fillOpacity: m?0.45:(isDark?0.2:0.18)
       };
     },
     onEachFeature: (f, layer)=>{
-      const name = f.properties.name || 'Unknown';
+      const name = f.properties.name||'Unknown';
       const m = name.toLowerCase()===uc;
 
       if(m && !centered){
@@ -706,15 +750,15 @@ function renderMap(geo){
       layer.on('mouseout',  e=>{ geoLayer.resetStyle(e.target); });
       layer.on('click', e=>{
         E.mapLabel.textContent = name;
-        setMapClock(COUNTRY_TZ[name] || currentTZ);
+        setMapClock(COUNTRY_TZ[name]||currentTZ);
 
         if(isFullscreen){
-          /* FIX 5: show floating name at click point slightly above */
+          /* FIX 5: show persistent tooltip at click point; NO auto-erase */
           showFsTip(e.latlng, name);
-          /* always re-center on clicked country in fullscreen */
-          mapInstance.setView(layer.getBounds().getCenter(), currentMapZoom, {animate:true});
+          /* FIX 2: DO NOT auto-center in fullscreen */
+          // (no setView here — user controls map freely)
         } else {
-          /* Normal: user's country only, only if at zoom 3 */
+          /* Normal: own country only, only at zoom 3 */
           if(m && currentMapZoom===3){
             mapInstance.setView(layer.getBounds().getCenter(), 3, {animate:true});
           }
@@ -725,7 +769,7 @@ function renderMap(geo){
 
   if(!isNaN(currentLat)){
     cityMarker = L.circleMarker([currentLat,currentLon], {
-      radius:      7,
+      radius: 7,
       color:       isDark ? pcColor : primary,
       weight:      2.5,
       fillColor:   isDark ? pcColor : primary,
@@ -748,21 +792,16 @@ async function showMap(){
     setTimeout(async()=>{
       if(!mapInstance){
         mapInstance = L.map('map', {
-          renderer:           L.canvas(),
-          zoomControl:        false,
-          attributionControl: false,
-          dragging:           false,
-          scrollWheelZoom:    false,
-          doubleClickZoom:    false,
-          boxZoom:            false,
-          keyboard:           false,
-          touchZoom:          false
+          renderer:L.canvas(), zoomControl:false, attributionControl:false,
+          dragging:false, scrollWheelZoom:false, doubleClickZoom:false,
+          boxZoom:false, keyboard:false, touchZoom:false
         }).setView([currentLat,currentLon], currentMapZoom);
         mapInstance.on('zoomend', ()=>{ updateZoomUI(mapInstance.getZoom()); });
       }
       renderMap(await loadWorldGeo());
       mapInstance.invalidateSize();
       updateZoomUI(currentMapZoom);
+      positionMapLabel(); // place label correctly for current screen size
     }, 120);
   }catch(e){ toast('Map failed to load', false); console.error(e); }
 }
@@ -771,12 +810,12 @@ E.mapBtn.addEventListener('click', showMap);
 /* ── Reload ── */
 E.reloadBtn.addEventListener('click', ()=>{
   if(isLoading){ toast('Please wait...', null); return; }
-  currentLat = NaN; currentLon = NaN;
-  clearInterval(mapClockTimer); mapClockTimer = null; E.mapTime.textContent = '';
-  if(mapInstance){ mapInstance.remove(); mapInstance = null; }
-  geoLayer = null; cityMarker = null; fsTooltip = null;
+  currentLat=NaN; currentLon=NaN;
+  clearInterval(mapClockTimer); mapClockTimer=null; E.mapTime.textContent='';
+  if(mapInstance){ mapInstance.remove(); mapInstance=null; }
+  geoLayer=null; cityMarker=null; fsTooltipLayer=null;
   if(isFullscreen) toggleFullscreen();
-  if(E.mapBox.classList.contains('show')){ E.mapBox.classList.remove('show'); E.mapBtn.textContent = 'Show Map'; }
+  if(E.mapBox.classList.contains('show')){ E.mapBox.classList.remove('show'); E.mapBtn.textContent='Show Map'; }
   loadMyIP();
 });
 
