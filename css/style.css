@@ -12,7 +12,7 @@ button{cursor:pointer;border:none;border-radius:20px;font-weight:600;font-family
 .btn:active{opacity:.7}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 
-main{max-width:560px;margin:auto;padding:16px}
+main{max-width:560px;margin:auto;padding:6px}
 
 /* ── Info rows ── */
 .info-row{padding:10px 0;border-bottom:1px solid var(--sv)}
@@ -31,7 +31,7 @@ main{max-width:560px;margin:auto;padding:16px}
 .skel-tz{width:130px}.skel-ipv4{width:110px}.skel-ipv6{width:220px}
 
 /* ── Sections ── */
-.section{margin-top:12px;border-radius:12px;overflow:hidden;border:1px solid var(--border)}
+.section{margin-top:12px;border-radius:6px;overflow:hidden;border:1px solid var(--border)}
 .section-header{width:100%;padding:14px 16px;background:var(--pc);color:var(--opc);display:flex;justify-content:space-between;align-items:center;font-weight:600;font-size:14px;border:none;border-radius:0;transition:background .2s}
 .section-header:hover{filter:brightness(.95)}
 .section-header .arrow{transition:transform .3s;font-size:18px}
@@ -110,7 +110,7 @@ body:not(.dark) .leaflet-container{background:var(--bg)!important}
 }
 /* Map fills all space ABOVE the fixed toolbar */
 .map-box.fullscreen #map{
-  flex:1;height:auto!important;order:1
+  flex:1;height:auto!important;order:2
 }
 /* Toolbar pinned to bottom, never hidden behind browser chrome */
 .map-box.fullscreen #mapToolbar{
