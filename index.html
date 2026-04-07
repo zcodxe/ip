@@ -15,12 +15,14 @@
 
 <header>
   <button id="reloadBtn" class="btn">Reload</button>
-  <button id="themeBtn" class="btn">Dark</button>
+  <button id="colorBtn" class="btn">Color</button>
+  <!-- Half-circle SVG dark/light toggle -->
+  <button id="themeBtn" class="icon-btn" title="Toggle dark/light"></button>
 </header>
 
 <main>
 
-  <div class="section" style="margin-top:0;border-radius:12px">
+  <div class="section" style="margin-top:0;border-radius:6px">
     <div style="padding:12px 16px;background:var(--surface)">
       <div class="info-row">
         <div class="info-label">Country</div>
@@ -33,11 +35,17 @@
     </div>
   </div>
 
-  <button id="mapBtn" class="btn" style="width:100%;margin-top:12px;border-radius:10px;padding:12px">Show Map</button>
+  <button id="mapBtn" class="btn" style="width:100%;margin-top:12px;border-radius:6px;padding:12px">Show Map</button>
   <div id="mapBox" class="map-box">
+    <!--
+      mapLabel lives here in HTML;
+      JS moves it: mobile → inside mapBox (absolute top-left),
+                   desktop → first child of mapToolbar
+    -->
+    <button id="mapLabel" title="Reset to default view"></button>
     <div id="map"></div>
     <div id="mapToolbar">
-      <button id="mapLabel" title="Reset to default view"></button>
+      <!-- mapLabel injected here on desktop by JS -->
       <span id="mapTime"></span>
       <div id="zoomCtrl">
         <button class="zstep" id="zoomOut">&#8722;</button>
@@ -96,16 +104,18 @@
     </div>
   </div>
 
-  <div class="section">
-    <button class="section-header" onclick="toggleSection('themePicker',this)">
-      Color Theme <span class="arrow">›</span>
-    </button>
-    <div id="themePicker" class="section-body">
-      <div id="themeGrid" class="theme-grid"></div>
-    </div>
-  </div>
-
 </main>
+
+<!-- Color Theme Modal (bottom sheet) -->
+<div id="themeModal">
+  <div id="themeSheet">
+    <div id="themeSheetHead">
+      <span id="themeSheetTitle">Color Theme</span>
+      <button id="themeSheetClose">×</button>
+    </div>
+    <div id="themeGridModal"></div>
+  </div>
+</div>
 
 <div id="toast" class="toast">
   <span id="toastIcon" class="toast-icon none"></span>
@@ -116,4 +126,4 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="js/script.js"></script>
 </body>
-</html>
+    </html>
