@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>IP Info</title>
+<link id="theme-style" rel="stylesheet" href="css/themes/ocean-teal.css">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+</head>
+<body>
+
+<div id="cooldownBar"></div>
+
+<header>
+  <button id="reloadBtn" class="btn">Reload</button>
+  <button id="themeBtn" class="btn">Dark</button>
+</header>
+
+<main>
+
+  <div class="section" style="margin-top:0;border-radius:12px">
+    <div style="padding:12px 16px;background:var(--surface)">
+      <div class="info-row">
+        <div class="info-label">Country</div>
+        <div id="country">—</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">Latitude, Longitude</div>
+        <div id="latlng" class="info-value" title="Click to copy"><span class="skel skel-latlng"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <button id="mapBtn" class="btn" style="width:100%;margin-top:12px;border-radius:10px;padding:12px">Show Map</button>
+  <div id="mapBox" class="map-box">
+    <div id="map"></div>
+    <div id="mapToolbar">
+      <button id="mapLabel" title="Reset to default view"></button>
+      <span id="mapTime"></span>
+      <div id="zoomCtrl">
+        <button class="zstep" id="zoomOut">&#8722;</button>
+        <span id="zoomNum">3</span>
+        <button class="zstep" id="zoomIn">&#43;</button>
+      </div>
+      <button id="fsBtn" title="Full screen">&#x26F6;</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <button class="section-header" onclick="toggleSection('loc',this)">
+      Location &amp; ISP <span class="arrow">›</span>
+    </button>
+    <div id="loc" class="section-body">
+      <div class="info-row"><div class="info-label">City &amp; Region</div><div id="city"><span class="skel skel-city"></span></div></div>
+      <div class="info-row"><div class="info-label">ISP / Org</div><div id="isp"><span class="skel skel-isp"></span></div></div>
+      <div class="info-row">
+        <div class="info-label">Timezone</div>
+        <div id="tz"><span class="skel skel-tz"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <button class="section-header" onclick="toggleSection('ipSec',this)">
+      IP Address <span class="arrow">›</span>
+    </button>
+    <div id="ipSec" class="section-body">
+      <div class="info-row"><div class="info-label">IPv4</div><div id="ipv4" class="info-value" title="Click to copy"><span class="skel skel-ipv4"></span></div></div>
+      <div class="info-row"><div class="info-label">IPv6</div><div id="ipv6" class="info-value" title="Click to copy"><span class="skel skel-ipv6"></span></div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <button class="section-header" onclick="toggleSection('custom',this)">
+      Check Custom IP / Domain <span class="arrow">›</span>
+    </button>
+    <div id="custom" class="section-body">
+      <div class="ig" style="margin-top:10px">
+        <div class="input-wrap">
+          <input id="inp" placeholder="Enter IP address or domain" autocomplete="off" spellcheck="false">
+          <button id="clearBtn" class="clear-btn" title="Clear">×</button>
+        </div>
+        <button class="btn" onclick="lookupCustom()">Lookup</button>
+      </div>
+      <div id="rBox" style="display:none">
+        <div class="info-row"><div class="info-label">Resolved IPs</div><div id="rIP" class="cc"></div></div>
+      </div>
+      <div id="cRes" style="display:none">
+        <div class="info-row"><div class="info-label">Country</div><div id="cc">—</div></div>
+        <div class="info-row"><div class="info-label">City / Region</div><div id="cct">—</div></div>
+        <div class="info-row"><div class="info-label">Coordinates</div><div id="cl" class="info-value">—</div></div>
+        <div class="info-row"><div class="info-label">ISP / Org</div><div id="ci">—</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <button class="section-header" onclick="toggleSection('themePicker',this)">
+      Color Theme <span class="arrow">›</span>
+    </button>
+    <div id="themePicker" class="section-body">
+      <div id="themeGrid" class="theme-grid"></div>
+    </div>
+  </div>
+
+</main>
+
+<div id="toast" class="toast">
+  <span id="toastIcon" class="toast-icon none"></span>
+  <span id="toastMsg"></span>
+</div>
+
+<script src="js/themes.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/script.js"></script>
+</body>
+</html>
