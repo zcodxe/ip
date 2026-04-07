@@ -28,7 +28,7 @@ button{cursor:pointer;border:none;border-radius:20px;font-weight:600;font-family
   display:inline-flex;align-items:center;justify-content:center;
   flex-shrink:0;transition:background .15s,color .15s;padding:0
 }
-.icon-btn svg{width:25px;height:25px}
+.icon-btn svg{width:28px;height:28px}
 .icon-btn:hover{background:var(--pc);color:var(--opc)}
 .icon-btn:active{opacity:.7}
 
