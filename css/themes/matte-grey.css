@@ -1,0 +1,13 @@
+/* Matte Grey */
+:root{
+  --bg:#f2f3f5;--text:#1e2022;--border:#9aa0a8;--label:#656b72;
+  --surface:#f9fafb;--sv:#e2e5e8;--os:#1e2022;--osv:#6b7280;
+  --p:#6f757c;--op:#fff;--pc:#d1d5da;--opc:#1e2022;
+  --skel-base:#c4cace;--skel-shine:#dde0e4
+}
+body.dark{
+  --bg:#18191b;--text:#d4d6d8;--border:#2c2f32;--label:#8a8f96;
+  --surface:#202224;--sv:#282b2e;--os:#d4d6d8;--osv:#9aa0a6;
+  --p:#9aa0a6;--op:#111213;--pc:#2c2f32;--opc:#d4d6d8;
+  --skel-base:#28292b;--skel-shine:#333538
+}

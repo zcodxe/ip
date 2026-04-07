@@ -1,0 +1,13 @@
+/* Forest Green */
+:root{
+  --bg:#eef3ee;--text:#1a2e1a;--border:#7aaa7a;--label:#4a7a4a;
+  --surface:#f4f9f4;--sv:#d8edda;--os:#1a2e1a;--osv:#5a8a5a;
+  --p:#5c8d62;--op:#fff;--pc:#c8e6cc;--opc:#0f2e12;
+  --skel-base:#aad0ae;--skel-shine:#c4e4c8
+}
+body.dark{
+  --bg:#101e10;--text:#c8e4c8;--border:#1e3820;--label:#6aaa6a;
+  --surface:#141e14;--sv:#1a2e1a;--os:#c8e4c8;--osv:#8aaa8a;
+  --p:#82b37f;--op:#04140a;--pc:#1e3820;--opc:#c8e4cc;
+  --skel-base:#1c3420;--skel-shine:#264830
+}

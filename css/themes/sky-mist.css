@@ -1,0 +1,13 @@
+:root{
+  --bg:#f0f7ff;--text:#2a3440;--border:#d4e6fb;--label:#7f97ad;
+  --surface:#f7fbff;--sv:#e3f0ff;--os:#2a3440;--osv:#90a7bd;
+  --p:#5e82aa;--op:#fff;--pc:#d9e9ff;--opc:#1f3e6b;
+  --skel-base:#dbe8f5;--skel-shine:#edf5ff
+}
+body.dark{
+  --bg:#141a20;--text:#d6e2ee;--border:#28323c;--label:#9bb0c5;
+  --surface:#1c232b;--sv:#252e38;--os:#d6e2ee;--osv:#b3c4d6;
+  --p:#7f9cb3;--op:#0e1318;--pc:#2b3e55;--opc:#e4f0ff;
+  --skel-base:#28323c;--skel-shine:#34414d
+}
+

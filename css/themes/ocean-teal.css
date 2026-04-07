@@ -1,0 +1,13 @@
+/* Ocean Teal — default theme */
+:root{
+  --bg:#eef2f5;--text:#2a2f33;--border:#8fa8b8;--label:#5f7a8a;
+  --surface:#f7f9fb;--sv:#dde5ec;--os:#2a2f33;--osv:#6b7c88;
+  --p:#5c8d89;--op:#fff;--pc:#cfe3e1;--opc:#1f3e3c;
+  --skel-base:#bfcdd6;--skel-shine:#d8e6ec
+}
+body.dark{
+  --bg:#14181b;--text:#d8dee3;--border:#2a3136;--label:#8fa3ad;
+  --surface:#1b2024;--sv:#252c31;--os:#d8dee3;--osv:#9fb0ba;
+  --p:#7fb3ad;--op:#0f1412;--pc:#2e4a48;--opc:#cfe3e1;
+  --skel-base:#2a3540;--skel-shine:#374550
+}
