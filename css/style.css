@@ -23,12 +23,12 @@ button{cursor:pointer;border:none;border-radius:20px;font-weight:600;font-family
 
 /* Icon button (SVG theme toggle) */
 .icon-btn{
-  width:36px;height:36px;border-radius:6px;border:1px solid var(--border);
+  width:34px;height:34px;border-radius:6px;border:1px solid var(--border);
   background:var(--sv);color:var(--os);
   display:inline-flex;align-items:center;justify-content:center;
   flex-shrink:0;transition:background .15s,color .15s;padding:0
 }
-.icon-btn svg{width:18px;height:18px}
+.icon-btn svg{width:25px;height:25px}
 .icon-btn:hover{background:var(--pc);color:var(--opc)}
 .icon-btn:active{opacity:.7}
 
