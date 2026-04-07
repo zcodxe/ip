@@ -145,7 +145,6 @@ function clearSkel(el, html, isHTML=false){
 /* ── Toast (FIX 3: circle around icon, same color) ── */
 // ok=true → ✓ green circle, ok=false → ✕ red circle, ok=null → no icon
 function toast(msg, ok=null, dur=2400){
-function toast(msg, ok=null, dur=2400){
   clearTimeout(toastTimer);
   E.toastMsg.textContent = msg;
   if(ok===true){
@@ -160,7 +159,7 @@ function toast(msg, ok=null, dur=2400){
   }
   E.toast.classList.add('show');
   toastTimer = setTimeout(()=>E.toast.classList.remove('show'), dur);
-}
+     }
 
 /* ── Copy (delegated) ── */
 document.addEventListener('click', e=>{
@@ -168,10 +167,9 @@ document.addEventListener('click', e=>{
   const t = e.target.textContent.trim();
   if(!t || t==='—') return;
   navigator.clipboard.writeText(t)
-    .then(()=>toast('Copied: '+t, true))
+    .then(()=>toast('Copied', true))
     .catch(()=>toast('Copy failed', false));
 });
-
 /* ── Dark / Light mode toggle ── */
 let isDark = localStorage.getItem('theme')==='dark';
 function applyDarkMode(){
