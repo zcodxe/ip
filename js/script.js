@@ -168,7 +168,7 @@ document.addEventListener('click', e=>{
   const t = e.target.textContent.trim();
   if(!t || t==='—') return;
   navigator.clipboard.writeText(t)
-    .then(()=>toast('Copied:', true))
+    .then(()=>toast('Copied: '+t, true))
     .catch(()=>toast('Copy failed', false));
 });
 
